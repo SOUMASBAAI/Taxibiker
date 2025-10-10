@@ -1,29 +1,44 @@
 security:
     # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
     password_hashers:
-        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: "auto"
+        App\Entity\User:
+            algorithm: auto
+
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
-        users_in_memory: { memory: null }
+        app_user_provider:
+            entity:
+                class: App\Entity\User
+                property: email
+
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
+
+        api:
+            pattern: ^/api
+            stateless: true
+            provider: app_user_provider
+            entry_point: jwt
+            jwt: ~
+
         main:
             lazy: true
-            provider: users_in_memory
-
-            # activate different ways to authenticate
-            # https://symfony.com/doc/current/security.html#the-firewall
-
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
+            provider: app_user_provider
 
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        - { path: ^/api/register, roles: PUBLIC_ACCESS }
+        - { path: ^/api/login, roles: PUBLIC_ACCESS }
+        - { path: ^/api/pricing, roles: PUBLIC_ACCESS }
+        - { path: ^/api/me, roles: ROLE_USER }
+        - { path: ^/api/user, roles: ROLE_USER }
+        - { path: ^/api/reservations, roles: ROLE_USER }
+        - { path: ^/api/admin, roles: PUBLIC_ACCESS } # TODO: Changer en ROLE_ADMIN quand l'auth admin sera prête
+        - { path: ^/api, roles: PUBLIC_ACCESS }
 
 when@test:
     security:

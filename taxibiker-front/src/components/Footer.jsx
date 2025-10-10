@@ -2,7 +2,7 @@ import { Mail, Phone, Instagram } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="bg-gradient-to-br from-[#111] to-[#000] text-white px-6 py-10 mt-12">
+    <footer className="bg-black text-white px-6 py-10 mt-12">
       <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         
         {/* Logo + Slogan */}
@@ -49,7 +49,7 @@ export default function Footer() {
         <div>
           <h3 className="font-semibold mb-2">Suivez-nous</h3>
           <a
-            href="https://instagram.com/taxibike"
+            href="https://www.instagram.com/taxi.biker.paris/"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 text-gray-300 hover:text-[#DD5212] transition text-sm"
@@ -62,7 +62,7 @@ export default function Footer() {
 
       {/* Bas de page */}
       <div className="border-t border-white/10 mt-8 pt-4 text-center text-xs text-gray-400">
-        <p>© 2025 TaxiBike. Tous droits réservés.</p>
+        <p>© 2025 TaxiBiker. Tous droits réservés.</p>
         <p className="mt-1">
           Ce site est une réalisation de <span className="text-white font-semibold">ISAKODE</span>.
         </p>

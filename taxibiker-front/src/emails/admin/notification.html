@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nouvelle demande de course</title>
+</head>
+<body style="margin:0; font-family: Arial, sans-serif; background-color:#f4f4f4; padding:20px;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:auto; background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 0 10px rgba(0,0,0,0.1);">
+    <tr>
+      <td style="background-color:#DD5212; padding:20px; text-align:center;">
+        <img src="https://yourdomain.com/logo.png" alt="TAXIBIKER" style="max-width:150px;">
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:20px; color:#333;">
+        <h2 style="margin-top:0; color:#DD5212;">Nouvelle demande de course à confirmer</h2>
+        <p>Bonjour Admin,</p>
+        <p>Une nouvelle demande de course a été effectuée par un utilisateur et nécessite votre confirmation.</p>
+
+        <h3 style="color:#333;">Détails de la course :</h3>
+        <ul style="padding-left:20px; color:#333;">
+          <li><strong>Nom :</strong> {{firstname}} {{lastname}}</li>
+          <li><strong>Email :</strong> {{email}}</li>
+          <li><strong>Téléphone :</strong> {{phone}}</li>
+          <li><strong>Date :</strong> {{date}}</li>
+          <li><strong>Heure :</strong> {{time}}</li>
+          <li><strong>Départ :</strong> {{from}}</li>
+          <li><strong>Arrivée :</strong> {{to}}</li>
+          <li><strong>Bagage volumineux :</strong> {{luggage}}</li>
+          <li><strong>Stop :</strong> {{stop}}</li>
+          <li><strong>Montant :</strong> {{price}}€</li>
+        </ul>
+
+        <p style="text-align:center; margin-top:20px;">
+          <a href="{{dashboardLink}}" style="background-color:#DD5212; color:white; padding:12px 20px; border-radius:8px; text-decoration:none; font-weight:bold;">
+            Confirmer la course
+          </a>
+        </p>
+
+        <p>Merci,<br>L’équipe TAXIBIKER 🚀</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="background-color:#DD5212; text-align:center; padding:10px; color:white; font-size:12px;">
+        &copy; 2025 TAXIBIKER. Tous droits réservés.
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

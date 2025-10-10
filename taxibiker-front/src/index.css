@@ -2,7 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Optionnel : police globale */
-html, body {
-  font-family: system-ui, sans-serif;
+@font-face {
+  font-family: 'MaPolice';
+  src: url('./assets/fonts/MaPolice.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+
+  h1 {
+  font-family: 'MaPolice', sans-serif;
 }
+
+}
+

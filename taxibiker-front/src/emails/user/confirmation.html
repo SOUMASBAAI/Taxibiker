@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Votre demande de course</title>
+</head>
+<body style="margin:0; font-family: Arial, sans-serif; background-color:#f4f4f4; padding:20px;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:auto; background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 0 10px rgba(0,0,0,0.1);">
+    <tr>
+      <td style="background-color:#DD5212; padding:20px; text-align:center;">
+        <img src="https://yourdomain.com/logo.png" alt="TAXIBIKER" style="max-width:150px;">
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:20px; color:#333;">
+        <h2 style="margin-top:0; color:#DD5212;">Votre demande de course a été reçue !</h2>
+        <p>Bonjour {{firstname}},</p>
+        <p>Votre demande de course a bien été prise en compte. Elle sera traitée rapidement par notre équipe. Une confirmation vous sera envoyée dès que la disponibilité sera vérifiée.</p>
+
+        <h3 style="color:#333;">Détails de votre course :</h3>
+        <ul style="padding-left:20px; color:#333;">
+          <li><strong>Date :</strong> {{date}}</li>
+          <li><strong>Heure :</strong> {{time}}</li>
+          <li><strong>Départ :</strong> {{from}}</li>
+          <li><strong>Arrivée :</strong> {{to}}</li>
+          <li><strong>Bagage volumineux :</strong> {{luggage}}</li>
+          <li><strong>Stop :</strong> {{stop}}</li>
+        </ul>
+
+        <p>Merci de votre confiance,<br>L’équipe TAXIBIKER 🚀</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="background-color:#DD5212; text-align:center; padding:10px; color:white; font-size:12px;">
+        &copy; 2025 TAXIBIKER. Tous droits réservés.
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

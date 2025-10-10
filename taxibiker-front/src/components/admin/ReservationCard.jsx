@@ -1,56 +1,30 @@
-export default function ReservationCard({ reservation, onEdit, onDelete, onRemovePast }) {
-  const isPast = new Date(reservation.date) < new Date();
+import React from "react";
 
+export default function ReservationCard({ reservation, onClick }) {
   return (
-    <article className="relative p-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex flex-col justify-between">
-      {/* Croix pour les réservations passées */}
-      {isPast && (
-        <button
-          onClick={() => onRemovePast(reservation.id)}
-          className="absolute top-2 right-2 text-gray-400 hover:text-white text-xl font-bold"
-          aria-label="Supprimer de l'affichage"
+    <article
+      onClick={onClick}
+      className="cursor-pointer p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition flex flex-col gap-2 text-sm sm:text-base"
+    >
+      <div className="flex justify-between items-center">
+        <h3 className="font-semibold">{reservation.date} à {reservation.time}</h3>
+        <span
+          className={`font-semibold ${
+            reservation.status === "Acceptée" ? "text-green-400" :
+            reservation.status === "Refusée" || reservation.status === "Annulée" ? "text-red-500" :
+            "text-yellow-400"
+          }`}
         >
-          ×
-        </button>
-      )}
-
-      <div className="mb-2">
-        <h2 className="text-lg font-semibold">
-          {reservation.date} à {reservation.time}
-        </h2>
-        <p><span className="font-semibold">Client :</span> {reservation.client}</p>
-        <p><span className="font-semibold">Prise en charge :</span> {reservation.from}</p>
-        <p><span className="font-semibold">Destination :</span> {reservation.to}</p>
-        {reservation.luggage && (
-          <p className="mt-1 text-xs text-gray-300 flex items-center gap-1">
-            🛄 Bagage volumineux (+15kg)
-          </p>
-        )}
-        <p className={`mt-2 font-semibold ${
-          reservation.status === "Acceptée" ? "text-green-400" :
-          reservation.status === "Refusée" ? "text-red-500" :
-          "text-yellow-400"
-        }`}>
           {reservation.status}
-        </p>
+        </span>
       </div>
 
-      {!isPast && (
-        <footer className="flex gap-2 mt-2">
-          <button
-            onClick={() => onEdit(reservation.id)}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 transition py-1 rounded-lg text-sm"
-          >
-            Modifier
-          </button>
-          <button
-            onClick={() => onDelete(reservation.id)}
-            className="flex-1 bg-red-600 hover:bg-red-700 transition py-1 rounded-lg text-sm"
-          >
-            Supprimer
-          </button>
-        </footer>
-      )}
+      <p><span className="font-semibold">Client :</span> {reservation.firstname || "Nom non défini"}</p>
+      <p><span className="font-semibold">Prise :</span> {reservation.from}</p>
+      <p><span className="font-semibold">Destination :</span> {reservation.to}</p>
+      {reservation.stop && <p><span className="font-semibold">Stop :</span> {reservation.stop}</p>}
+      <p><span className="font-semibold">Bagage :</span> {reservation.luggage ? "Oui (+15€)" : "Non"}</p>
+      <p><span className="font-semibold">Prix :</span> {reservation.price + (reservation.luggage ? 15 : 0)} €</p>
     </article>
   );
 }
