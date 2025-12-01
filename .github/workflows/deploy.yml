@@ -69,7 +69,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ env.PHP_VERSION }}
-           extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json, mysql
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json, mysql
           tools: composer:v2
 
       - name: Get composer cache directory
@@ -91,15 +91,15 @@ jobs:
       - name: Create .env.test file
         working-directory: ./taxibiker-back
         run: |
-           cat > .env.test << EOF
-           APP_ENV=test
-           APP_SECRET=test_secret_key_for_github_actions
-           DATABASE_URL=mysql://taxibiker:taxibiker@127.0.0.1:3306/taxibiker_test?serverVersion=8.0&charset=utf8mb4
-           JWT_SECRET_KEY=%kernel.project_dir%/config/jwt/private.pem
-           JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem
-           JWT_PASSPHRASE=test_passphrase
-           LEXIK_JWT_AUTHENTICATION_BUNDLE_VERSION=2.20
-           EOF
+          cat > .env.test << EOF
+          APP_ENV=test
+          APP_SECRET=test_secret_key_for_github_actions
+          DATABASE_URL=mysql://taxibiker:taxibiker@127.0.0.1:3306/taxibiker_test?serverVersion=8.0&charset=utf8mb4
+          JWT_SECRET_KEY=%kernel.project_dir%/config/jwt/private.pem
+          JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem
+          JWT_PASSPHRASE=test_passphrase
+          LEXIK_JWT_AUTHENTICATION_BUNDLE_VERSION=2.20
+          EOF
 
       - name: Generate JWT keys
         working-directory: ./taxibiker-back
@@ -143,7 +143,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ env.PHP_VERSION }}
-           extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json, mysql
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json, mysql
           tools: composer:v2
 
       - name: Install backend dependencies for production
@@ -257,7 +257,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ env.PHP_VERSION }}
-           extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json, mysql
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json, mysql
           tools: composer:v2
 
       - name: Install backend dependencies for production
