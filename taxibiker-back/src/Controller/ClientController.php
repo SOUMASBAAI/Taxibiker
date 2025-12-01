@@ -39,7 +39,9 @@ class ClientController extends AbstractController
                     'lastname' => $client->getLastName(),
                     'email' => $client->getEmail(),
                     'phone' => $client->getPhoneNumber(),
-                    'roles' => $client->getRoles()
+                    'roles' => $client->getRoles(),
+                    'monthly_credit_enabled' => $client->isMonthlyCreditEnabled(),
+                    'current_credit' => (float) $client->getCurrentCredit()
                 ];
             }
 
@@ -97,6 +99,11 @@ class ClientController extends AbstractController
                 $client->setPhoneNumber($data['phone']);
             }
 
+            // Gérer le crédit mensuel (par défaut false si non spécifié)
+            if (isset($data['monthly_credit_enabled'])) {
+                $client->setMonthlyCreditEnabled((bool) $data['monthly_credit_enabled']);
+            }
+
             // Hasher le mot de passe
             $hashedPassword = $this->passwordHasher->hashPassword($client, $data['password']);
             $client->setPassword($hashedPassword);
@@ -127,7 +134,9 @@ class ClientController extends AbstractController
                     'lastname' => $client->getLastName(),
                     'email' => $client->getEmail(),
                     'phone' => $client->getPhoneNumber(),
-                    'roles' => $client->getRoles()
+                    'roles' => $client->getRoles(),
+                    'monthly_credit_enabled' => $client->isMonthlyCreditEnabled(),
+                    'current_credit' => (float) $client->getCurrentCredit()
                 ]
             ], Response::HTTP_CREATED);
 
@@ -206,7 +215,9 @@ class ClientController extends AbstractController
                     'lastname' => $client->getLastName(),
                     'email' => $client->getEmail(),
                     'phone' => $client->getPhoneNumber(),
-                    'roles' => $client->getRoles()
+                    'roles' => $client->getRoles(),
+                    'monthly_credit_enabled' => $client->isMonthlyCreditEnabled(),
+                    'current_credit' => (float) $client->getCurrentCredit()
                 ]
             ]);
 
@@ -269,6 +280,11 @@ class ClientController extends AbstractController
                 $client->setPhoneNumber($data['phone']);
             }
 
+            // Gérer le crédit mensuel
+            if (isset($data['monthly_credit_enabled'])) {
+                $client->setMonthlyCreditEnabled((bool) $data['monthly_credit_enabled']);
+            }
+
             // Sauvegarder les modifications
             $this->entityManager->flush();
 
@@ -281,7 +297,9 @@ class ClientController extends AbstractController
                     'lastname' => $client->getLastName(),
                     'email' => $client->getEmail(),
                     'phone' => $client->getPhoneNumber(),
-                    'roles' => $client->getRoles()
+                    'roles' => $client->getRoles(),
+                    'monthly_credit_enabled' => $client->isMonthlyCreditEnabled(),
+                    'current_credit' => (float) $client->getCurrentCredit()
                 ]
             ]);
 

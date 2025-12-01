@@ -5,18 +5,24 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Entity\ClassicReservation;
 use App\Entity\FlatRateBooking;
+use App\Repository\CreditRegularizationRepository;
+use App\Service\WhatsAppService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 #[Route('/api', name: 'api_')]
 class ReservationController extends AbstractController
 {
     public function __construct(
-        private EntityManagerInterface $entityManager
+        private EntityManagerInterface $entityManager,
+        private CreditRegularizationRepository $creditRegularizationRepository,
+        private WhatsAppService $whatsAppService,
+        private ParameterBagInterface $parameterBag
     ) {
     }
 
@@ -80,11 +86,37 @@ class ReservationController extends AbstractController
             }
 
             $this->entityManager->persist($reservation);
+
+            // Gestion du mode de paiement
+            $paymentMethod = $data['paymentMethod'] ?? 'immediate';
+            
+            // Valider le mode de paiement
+            if ($paymentMethod === 'credit' && !$user->isMonthlyCreditEnabled()) {
+                return $this->json([
+                    'error' => 'Le paiement à crédit n\'est pas activé pour votre compte'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+            
+            // Définir le mode de paiement sur la réservation
+            $reservation->setPaymentMethod($paymentMethod);
+            
+            // Si paiement à crédit, ajouter au crédit de l'utilisateur
+            if ($paymentMethod === 'credit') {
+                $user->addToCredit($reservation->getPrice());
+            }
+
             $this->entityManager->flush();
+
+            // Envoi des notifications WhatsApp
+            $this->sendWhatsAppNotifications($reservation, $user, $data);
+
+            $responseMessage = $paymentMethod === 'credit'
+                ? 'Réservation créée avec succès. Le montant a été ajouté à votre crédit mensuel.'
+                : 'Réservation créée avec succès. Paiement sur place requis.';
 
             return $this->json([
                 'success' => true,
-                'message' => 'Réservation créée avec succès',
+                'message' => $responseMessage,
                 'reservation' => [
                     'id' => $reservation->getId(),
                     'departure' => $reservation->getDeparture(),
@@ -92,7 +124,8 @@ class ReservationController extends AbstractController
                     'date' => $date->format('Y-m-d H:i:s'),
                     'price' => $reservation->getPrice(),
                     'status' => $reservation->getStatut(),
-                    'type' => $mode
+                    'type' => $mode,
+                    'payment_method' => $paymentMethod
                 ]
             ], Response::HTTP_CREATED);
 
@@ -154,7 +187,8 @@ class ReservationController extends AbstractController
                 'date' => $res->getDate()->format('Y-m-d H:i:s'),
                 'price' => $res->getPrice(),
                 'status' => $res->getStatut(),
-                'excessBaggage' => $res->isExcessBaggage()
+                'excessBaggage' => $res->isExcessBaggage(),
+                'paymentMethod' => $res->getPaymentMethod()
             ];
         }
 
@@ -175,7 +209,8 @@ class ReservationController extends AbstractController
                 'date' => $res->getDate()->format('Y-m-d H:i:s'),
                 'price' => $res->getPrice(),
                 'status' => $res->getStatut(),
-                'excessBaggage' => $res->isExcessBaggage()
+                'excessBaggage' => $res->isExcessBaggage(),
+                'paymentMethod' => $res->getPaymentMethod()
             ];
         }
 
@@ -225,7 +260,9 @@ class ReservationController extends AbstractController
                 'date' => $res->getDate()->format('Y-m-d H:i:s'),
                 'price' => $res->getPrice(),
                 'status' => $res->getStatut(),
-                'excessBaggage' => $res->isExcessBaggage()
+                'excessBaggage' => $res->isExcessBaggage(),
+                'paymentMethod' => $res->getPaymentMethod(),
+                'isRegularized' => $this->isReservationRegularized($user, $res->getDate(), $res->getPaymentMethod())
             ];
         }
 
@@ -238,7 +275,9 @@ class ReservationController extends AbstractController
                 'date' => $res->getDate()->format('Y-m-d H:i:s'),
                 'price' => $res->getPrice(),
                 'status' => $res->getStatut(),
-                'excessBaggage' => $res->isExcessBaggage()
+                'excessBaggage' => $res->isExcessBaggage(),
+                'paymentMethod' => $res->getPaymentMethod(),
+                'isRegularized' => $this->isReservationRegularized($user, $res->getDate(), $res->getPaymentMethod())
             ];
         }
 
@@ -293,8 +332,14 @@ class ReservationController extends AbstractController
         }
 
         try {
+            $oldStatus = $reservation->getStatut();
             $reservation->setStatut($backendStatus);
             $this->entityManager->flush();
+
+            // Envoyer notification WhatsApp si le statut a changé
+            if ($oldStatus !== $backendStatus) {
+                $this->sendStatusUpdateNotification($reservation, $backendStatus);
+            }
 
             return $this->json([
                 'success' => true,
@@ -425,6 +470,19 @@ class ReservationController extends AbstractController
 
         try {
             $reservation->setStatut('cancelled');
+            
+            // Si l'utilisateur a le crédit activé, soustraire le montant de son crédit
+            if ($user->isMonthlyCreditEnabled()) {
+                $currentCredit = $user->getCurrentCredit();
+                $reservationPrice = $reservation->getPrice();
+                $newCredit = bcsub($currentCredit, $reservationPrice, 2);
+                
+                // S'assurer que le crédit ne devient pas négatif
+                if (bccomp($newCredit, '0.00', 2) >= 0) {
+                    $user->setCurrentCredit($newCredit);
+                }
+            }
+            
             $this->entityManager->flush();
 
             return $this->json([
@@ -532,6 +590,158 @@ class ReservationController extends AbstractController
             return $this->json([
                 'error' => 'Erreur lors de la modification: ' . $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Vérifie si une réservation est régularisée
+     */
+    private function isReservationRegularized(User $user, \DateTime $reservationDate, string $paymentMethod = 'immediate'): bool
+    {
+        // Si le paiement n'est pas à crédit, la facture est toujours disponible
+        if ($paymentMethod !== 'credit') {
+            return true;
+        }
+        
+        // Si l'utilisateur n'a pas le crédit mensuel activé, toutes les réservations sont considérées comme régularisées
+        if (!$user->isMonthlyCreditEnabled()) {
+            return true;
+        }
+
+        // Si le crédit actuel est à 0, tout est régularisé
+        if ((float) $user->getCurrentCredit() == 0) {
+            return true;
+        }
+
+        // Vérifier si le mois de la réservation a été régularisé
+        $monthKey = $reservationDate->format('Y-m');
+        $isMonthRegularized = $this->creditRegularizationRepository->isMonthRegularized($user, $monthKey);
+        
+        if (!$isMonthRegularized) {
+            return false;
+        }
+
+        // Si le crédit n'est pas à 0, vérifier s'il y a eu des courses ajoutées après la régularisation
+        $lastRegularization = $this->entityManager
+            ->getRepository(\App\Entity\CreditRegularization::class)
+            ->createQueryBuilder('cr')
+            ->andWhere('cr.user = :user')
+            ->andWhere('cr.month = :month')
+            ->setParameter('user', $user)
+            ->setParameter('month', $monthKey)
+            ->orderBy('cr.regularizedAt', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+        
+        if (!$lastRegularization) {
+            return false;
+        }
+
+        // Vérifier si cette réservation spécifique est antérieure à la régularisation
+        return $reservationDate <= $lastRegularization->getRegularizedAt();
+    }
+
+    /**
+     * Envoie les notifications WhatsApp pour une nouvelle réservation
+     */
+    private function sendWhatsAppNotifications($reservation, User $user, array $data): void
+    {
+        try {
+            // Préparer les données pour les notifications
+            $reservationData = [
+                'firstname' => $user->getFirstname(),
+                'lastname' => $user->getLastname(),
+                'email' => $user->getEmail(),
+                'phone' => $user->getPhoneNumber(),
+                'date' => $reservation->getDate()->format('d/m/Y'),
+                'time' => $reservation->getDate()->format('H:i'),
+                'price' => $reservation->getPrice(),
+                'paymentMethod' => $reservation->getPaymentMethod()
+            ];
+
+            // Ajouter les données spécifiques selon le type de réservation
+            if ($reservation instanceof ClassicReservation) {
+                $reservationData['type'] = 'classic';
+                $reservationData['from'] = $reservation->getDeparture();
+                $reservationData['to'] = $reservation->getArrival();
+                $reservationData['stop'] = $reservation->getStop();
+                $reservationData['luggage'] = $reservation->isExcessBaggage();
+            } elseif ($reservation instanceof FlatRateBooking) {
+                $reservationData['type'] = 'time';
+                $reservationData['from'] = $reservation->getDeparture();
+                $reservationData['to'] = $reservation->getArrival();
+                $reservationData['duration'] = $reservation->getNumberOfHours();
+                $reservationData['luggage'] = $reservation->isExcessBaggage();
+            }
+
+            // Notification au client
+            $this->whatsAppService->sendReservationConfirmation(
+                $user->getPhoneNumber(),
+                $reservationData
+            );
+
+            // Notification à l'admin
+            $adminPhoneNumber = $this->parameterBag->get('admin.whatsapp_number');
+            if ($adminPhoneNumber) {
+                $this->whatsAppService->sendAdminNotification(
+                    $adminPhoneNumber,
+                    $reservationData
+                );
+            }
+
+        } catch (\Exception $e) {
+            // Log l'erreur mais ne pas faire échouer la réservation
+            error_log('Erreur envoi WhatsApp: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Envoie une notification WhatsApp pour un changement de statut
+     */
+    private function sendStatusUpdateNotification($reservation, string $newStatus): void
+    {
+        try {
+            $user = $reservation->getClient();
+            
+            // Mapper les statuts backend vers les statuts affichés
+            $statusMap = [
+                'confirmed' => 'Acceptée',
+                'cancelled' => 'Refusée',
+                'in_progress' => 'En cours',
+                'completed' => 'Terminée'
+            ];
+            
+            $displayStatus = $statusMap[$newStatus] ?? $newStatus;
+            
+            // Préparer les données de la réservation
+            $reservationData = [
+                'firstname' => $user->getFirstname(),
+                'lastname' => $user->getLastname(),
+                'date' => $reservation->getDate()->format('d/m/Y'),
+                'time' => $reservation->getDate()->format('H:i'),
+                'price' => $reservation->getPrice()
+            ];
+
+            // Ajouter les données spécifiques selon le type
+            if ($reservation instanceof ClassicReservation) {
+                $reservationData['from'] = $reservation->getDeparture();
+                $reservationData['to'] = $reservation->getArrival();
+            } elseif ($reservation instanceof FlatRateBooking) {
+                $reservationData['from'] = $reservation->getDeparture();
+                $reservationData['to'] = $reservation->getArrival();
+            }
+
+            // Envoyer la notification
+            $this->whatsAppService->sendStatusUpdate(
+                $user->getPhoneNumber(),
+                $reservationData,
+                $displayStatus
+            );
+
+        } catch (\Exception $e) {
+            // Log l'erreur mais ne pas faire échouer la mise à jour
+            error_log('Erreur envoi WhatsApp changement statut: ' . $e->getMessage());
         }
     }
 }

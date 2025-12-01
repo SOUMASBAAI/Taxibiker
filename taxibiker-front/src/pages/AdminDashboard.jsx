@@ -22,6 +22,7 @@ import authService from "../services/authService";
 // Weekly Calendar Component
 const WeeklyCalendar = ({ reservations, onReservationClick, onDayClick }) => {
   const [currentWeek, setCurrentWeek] = useState(new Date());
+  const [currentDay, setCurrentDay] = useState(new Date());
 
   // Get start and end of current week (Monday to Sunday)
   const getWeekDates = (date) => {
@@ -57,10 +58,28 @@ const WeeklyCalendar = ({ reservations, onReservationClick, onDayClick }) => {
 
   const weekDays = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
+  // Navigation jour par jour pour mobile
+  const nextDay = () => {
+    const next = new Date(currentDay);
+    next.setDate(next.getDate() + 1);
+    setCurrentDay(next);
+  };
+
+  const prevDay = () => {
+    const prev = new Date(currentDay);
+    prev.setDate(prev.getDate() - 1);
+    setCurrentDay(prev);
+  };
+
+  // Pour mobile, on affiche seulement le jour courant
+  const mobileDay = [currentDay];
+  const mobileDayReservations =
+    reservationsByDate[currentDay.toDateString()] || [];
+
   return (
     <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 shadow-xl">
-      {/* Week Navigation */}
-      <div className="flex items-center justify-between mb-6">
+      {/* Navigation Desktop - Week */}
+      <div className="hidden md:flex items-center justify-between mb-6">
         <button
           onClick={() =>
             setCurrentWeek(
@@ -100,8 +119,40 @@ const WeeklyCalendar = ({ reservations, onReservationClick, onDayClick }) => {
         </button>
       </div>
 
-      {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-4 min-h-[450px]">
+      {/* Navigation Mobile - Day */}
+      <div className="flex md:hidden items-center justify-between mb-6">
+        <button
+          onClick={prevDay}
+          className="flex items-center justify-center w-10 h-10 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-xl transition-all duration-200 border border-blue-500/30"
+        >
+          <FaArrowLeft className="text-sm" />
+        </button>
+
+        <div className="text-center">
+          <h3 className="text-lg font-bold text-white mb-1">
+            {currentDay.toLocaleDateString("fr-FR", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+          </h3>
+          <p className="text-blue-300 text-sm">
+            {mobileDayReservations.length} réservation
+            {mobileDayReservations.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+
+        <button
+          onClick={nextDay}
+          className="flex items-center justify-center w-10 h-10 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-xl transition-all duration-200 border border-blue-500/30"
+        >
+          <FaArrowRight className="text-sm" />
+        </button>
+      </div>
+
+      {/* Desktop Calendar - Week View */}
+      <div className="hidden md:grid md:grid-cols-7 gap-4 min-h-[450px]">
         {weekDates.map((date, index) => {
           const dateString = date.toDateString();
           const dayReservations = reservationsByDate[dateString] || [];
@@ -109,11 +160,14 @@ const WeeklyCalendar = ({ reservations, onReservationClick, onDayClick }) => {
           const isPast = date < new Date() && !isToday;
 
           return (
-            <div key={index} className="flex flex-col min-h-[400px]">
+            <div
+              key={index}
+              className="flex flex-col min-h-[200px] md:min-h-[400px]"
+            >
               {/* Day Header - Clickable */}
               <div
                 onClick={() => onDayClick(date)}
-                className={`text-center p-4 rounded-xl mb-3 cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg ${
+                className={`text-center p-3 md:p-4 rounded-xl mb-3 cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg ${
                   isToday
                     ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-orange-500/25"
                     : isPast
@@ -124,7 +178,9 @@ const WeeklyCalendar = ({ reservations, onReservationClick, onDayClick }) => {
                 <div className="text-xs font-medium opacity-80 mb-1">
                   {weekDays[index]}
                 </div>
-                <div className="text-2xl font-bold mb-1">{date.getDate()}</div>
+                <div className="text-xl md:text-2xl font-bold mb-1">
+                  {date.getDate()}
+                </div>
                 <div className="flex items-center justify-center gap-1 text-xs opacity-75">
                   <FaPlus className="text-xs" />
                   <span>Ajouter</span>
@@ -132,12 +188,12 @@ const WeeklyCalendar = ({ reservations, onReservationClick, onDayClick }) => {
               </div>
 
               {/* Reservations for this day */}
-              <div className="space-y-2 flex-1 min-h-[320px]">
+              <div className="space-y-2 flex-1 min-h-[120px] md:min-h-[320px]">
                 {dayReservations.map((res) => (
                   <div
                     key={res.id}
                     onClick={() => onReservationClick(res)}
-                    className={`p-3 rounded-xl text-xs cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg border ${
+                    className={`p-2 md:p-3 rounded-xl text-xs cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg border ${
                       res.status === "Acceptée"
                         ? "bg-gradient-to-br from-green-600 to-green-700 text-white border-green-500/30 shadow-green-500/20"
                         : res.status === "À confirmer"
@@ -177,6 +233,76 @@ const WeeklyCalendar = ({ reservations, onReservationClick, onDayClick }) => {
             </div>
           );
         })}
+      </div>
+
+      {/* Mobile Calendar - Day View */}
+      <div className="block md:hidden">
+        <div className="flex flex-col min-h-[300px]">
+          {/* Day Header - Clickable */}
+          <div
+            onClick={() => onDayClick(currentDay)}
+            className={`text-center p-3 rounded-xl mb-3 cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg ${
+              currentDay.toDateString() === today
+                ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-orange-500/25"
+                : currentDay < new Date() && currentDay.toDateString() !== today
+                ? "bg-gradient-to-br from-gray-700 to-gray-800 text-gray-400 hover:from-gray-600 hover:to-gray-700"
+                : "bg-gradient-to-br from-blue-600/20 to-blue-700/20 text-white hover:from-blue-600/30 hover:to-blue-700/30 border border-blue-500/30"
+            }`}
+          >
+            <div className="text-xs font-medium opacity-80 mb-1">
+              {currentDay.toLocaleDateString("fr-FR", { weekday: "short" })}
+            </div>
+            <div className="text-xl font-bold mb-1">{currentDay.getDate()}</div>
+            <div className="flex items-center justify-center gap-1 text-xs opacity-75">
+              <FaPlus className="text-xs" />
+              <span>Ajouter</span>
+            </div>
+          </div>
+
+          {/* Reservations for this day */}
+          <div className="space-y-2 flex-1 min-h-[120px]">
+            {mobileDayReservations.map((res) => (
+              <div
+                key={res.id}
+                onClick={() => onReservationClick(res)}
+                className={`p-2 rounded-xl text-xs cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg border ${
+                  res.status === "Acceptée"
+                    ? "bg-gradient-to-br from-green-600 to-green-700 text-white border-green-500/30 shadow-green-500/20"
+                    : res.status === "À confirmer"
+                    ? "bg-gradient-to-br from-yellow-600 to-yellow-700 text-white border-yellow-500/30 shadow-yellow-500/20"
+                    : res.status === "Refusée"
+                    ? "bg-gradient-to-br from-red-600 to-red-700 text-white border-red-500/30 shadow-red-500/20"
+                    : "bg-gradient-to-br from-blue-600 to-blue-700 text-white border-blue-500/30 shadow-blue-500/20"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <FaClock className="text-xs opacity-80" />
+                  <span className="font-semibold">{res.time}</span>
+                </div>
+                <div className="font-medium mb-1">
+                  {res.firstname} {res.lastname}
+                </div>
+                <div className="flex items-start gap-1 text-xs opacity-90">
+                  <FaMapMarkerAlt className="text-xs mt-0.5 flex-shrink-0" />
+                  <div className="truncate">
+                    {res.tripType === "time" ? (
+                      <>
+                        {res.from} • {res.duration}h
+                      </>
+                    ) : (
+                      <>
+                        {res.from} → {res.to}
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-2 pt-2 border-t border-white/20 text-right">
+                  <span className="font-bold">{res.price}€</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

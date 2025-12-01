@@ -2,9 +2,18 @@ import React, { useEffect, useState } from "react";
 import ViewReservationModal from "../Modal/ViewReservationModal";
 import EditReservationModal from "../Modal/EditReservationModal";
 import DashboardHeader from "../components/user/DashboardHeader";
+import CreditCard from "../components/user/CreditCard";
+import CreditHistoryModal from "../components/user/CreditHistoryModal";
 import authService from "../services/authService";
 import WhatsappButton from "../components/WhatsappButton";
-import { FaMotorcycle, FaClock, FaEdit, FaTimes, FaEye } from "react-icons/fa";
+import {
+  FaMotorcycle,
+  FaClock,
+  FaEdit,
+  FaTimes,
+  FaEye,
+  FaDownload,
+} from "react-icons/fa";
 
 export default function UserDashboard() {
   const [reservations, setReservations] = useState([]);
@@ -14,12 +23,17 @@ export default function UserDashboard() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [creditInfo, setCreditInfo] = useState(null);
+  const [isCreditLoading, setIsCreditLoading] = useState(true);
+  const [showCreditHistory, setShowCreditHistory] = useState(false);
 
   const handleNavigation = (page) => {
     if (page === "reservation") {
       window.location.href = "/reservation";
     } else if (page === "home") {
       window.location.href = "/";
+    } else if (page === "settings") {
+      window.location.href = "/settings";
     } else if (page === "logout") {
       authService.logout();
       window.location.href = "/";
@@ -69,6 +83,7 @@ export default function UserDashboard() {
               price: parseFloat(res.price),
               type: res.type,
               hours: res.hours || null,
+              isRegularized: res.isRegularized || false,
             };
           });
 
@@ -85,7 +100,25 @@ export default function UserDashboard() {
       }
     };
 
+    const fetchCreditInfo = async () => {
+      try {
+        const response = await authService.authenticatedRequest(
+          "http://localhost:8000/api/user/credit"
+        );
+        const data = await response.json();
+
+        if (data.success) {
+          setCreditInfo(data.credit);
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement du crédit:", error);
+      } finally {
+        setIsCreditLoading(false);
+      }
+    };
+
     fetchReservations();
+    fetchCreditInfo();
   }, []);
 
   const handleUpdateReservation = async (updated) => {
@@ -200,6 +233,64 @@ export default function UserDashboard() {
     setShowEditModal(false);
   };
 
+  const handleDownloadInvoice = async (reservationId, isRegularized, e) => {
+    if (e) e.stopPropagation();
+
+    // Vérifier si la réservation est régularisée
+    if (!isRegularized) {
+      setNotification({
+        type: "error",
+        message:
+          "Impossible de télécharger la facture avant régularisation du crédit",
+      });
+      setTimeout(() => setNotification(null), 5000);
+      return;
+    }
+
+    try {
+      const response = await authService.authenticatedRequest(
+        `http://localhost:8000/api/invoice/${reservationId}`
+      );
+
+      if (response.ok) {
+        const htmlContent = await response.text();
+        const blob = new Blob([htmlContent], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `facture_${reservationId}_${
+          new Date().toISOString().split("T")[0]
+        }.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        setNotification({
+          type: "success",
+          message: "Facture téléchargée avec succès",
+        });
+        setTimeout(() => setNotification(null), 3000);
+      } else {
+        const errorData = await response.json();
+        setNotification({
+          type: "error",
+          message:
+            "Erreur lors du téléchargement: " +
+            (errorData.error || "Erreur inconnue"),
+        });
+        setTimeout(() => setNotification(null), 5000);
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      setNotification({
+        type: "error",
+        message: "Erreur lors du téléchargement de la facture",
+      });
+      setTimeout(() => setNotification(null), 5000);
+    }
+  };
+
   const today = new Date();
 
   const upcomingReservations = reservations.filter(
@@ -243,6 +334,13 @@ export default function UserDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Section Crédit */}
+        <CreditCard
+          creditInfo={creditInfo}
+          isLoading={isCreditLoading}
+          onShowHistory={() => setShowCreditHistory(true)}
+        />
 
         {/* Loading State */}
         {isLoading && (
@@ -560,8 +658,7 @@ export default function UserDashboard() {
                 {pastReservations.map((res) => (
                   <article
                     key={res.id}
-                    className="group bg-black border border-gray-700/50 rounded-2xl p-5 hover:border-orange-500/50 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300 cursor-pointer"
-                    onClick={() => handleViewReservation(res)}
+                    className="group bg-black border border-gray-700/50 rounded-2xl p-5 hover:border-orange-500/50 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300"
                   >
                     {/* Header avec badge statut */}
                     <div className="flex items-center justify-between mb-4">
@@ -668,6 +765,41 @@ export default function UserDashboard() {
                         </div>
                       )}
                     </div>
+
+                    {/* Bouton de téléchargement de facture pour les courses terminées */}
+                    {res.status === "Terminée" && (
+                      <div className="mt-4">
+                        <button
+                          onClick={(e) =>
+                            handleDownloadInvoice(res.id, res.isRegularized, e)
+                          }
+                          className={`w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl transition-all group/btn ${
+                            res.isRegularized
+                              ? "bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/20 hover:border-green-500/40"
+                              : "bg-gray-500/10 text-gray-400 border border-gray-500/20 cursor-not-allowed opacity-60"
+                          }`}
+                          title={
+                            res.isRegularized
+                              ? "Télécharger la facture"
+                              : "Facture non disponible - crédit non régularisé"
+                          }
+                          disabled={!res.isRegularized}
+                        >
+                          <FaDownload
+                            className={`text-sm transition-transform ${
+                              res.isRegularized
+                                ? "group-hover/btn:scale-110"
+                                : ""
+                            }`}
+                          />
+                          <span className="text-xs font-medium">
+                            {res.isRegularized
+                              ? "Télécharger facture"
+                              : "Facture indisponible"}
+                          </span>
+                        </button>
+                      </div>
+                    )}
                   </article>
                 ))}
               </div>
@@ -717,6 +849,12 @@ export default function UserDashboard() {
           </div>
         </div>
       )}
+
+      {/* Modal d'historique du crédit */}
+      <CreditHistoryModal
+        isOpen={showCreditHistory}
+        onClose={() => setShowCreditHistory(false)}
+      />
 
       {/* WhatsApp Button */}
       <WhatsappButton number="33612345678" />

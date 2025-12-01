@@ -34,6 +34,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private array $roles = [];
 
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $monthlyCreditEnabled = false;
+
+    #[ORM\Column(type: 'decimal', precision: 10, scale: 2, options: ['default' => '0.00'])]
+    private string $currentCredit = '0.00';
+
     public function getId(): ?int
     {
         return $this->id;
@@ -124,5 +130,43 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         // If we had temporary, sensitive data on the user, clear it here
         // e.g. $this->plainPassword = null;
+    }
+
+    public function isMonthlyCreditEnabled(): bool
+    {
+        return $this->monthlyCreditEnabled;
+    }
+
+    public function setMonthlyCreditEnabled(bool $monthlyCreditEnabled): static
+    {
+        $this->monthlyCreditEnabled = $monthlyCreditEnabled;
+
+        return $this;
+    }
+
+    public function getCurrentCredit(): string
+    {
+        return $this->currentCredit;
+    }
+
+    public function setCurrentCredit(string $currentCredit): static
+    {
+        $this->currentCredit = $currentCredit;
+
+        return $this;
+    }
+
+    public function addToCredit(string $amount): static
+    {
+        $this->currentCredit = bcadd($this->currentCredit, $amount, 2);
+
+        return $this;
+    }
+
+    public function resetCredit(): static
+    {
+        $this->currentCredit = '0.00';
+
+        return $this;
     }
 }

@@ -35,8 +35,12 @@ security:
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/pricing, roles: PUBLIC_ACCESS }
         - { path: ^/api/me, roles: ROLE_USER }
+        - { path: ^/api/user/credit/reset, roles: PUBLIC_ACCESS } # Temporaire pour les tests admin
+        - { path: ^/api/user/credit/\d+/history, roles: PUBLIC_ACCESS } # Temporaire pour les tests admin
+        - { path: ^/api/user/credit, roles: ROLE_USER } # Route utilisateur authentifiée
         - { path: ^/api/user, roles: ROLE_USER }
         - { path: ^/api/reservations, roles: ROLE_USER }
+        - { path: ^/api/invoice, roles: ROLE_USER } # Route factures utilisateur
         - { path: ^/api/admin, roles: PUBLIC_ACCESS } # TODO: Changer en ROLE_ADMIN quand l'auth admin sera prête
         - { path: ^/api, roles: PUBLIC_ACCESS }
 

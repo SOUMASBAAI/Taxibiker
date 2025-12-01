@@ -143,13 +143,16 @@ export default function AdminClients() {
       <AdminHeader />
 
       <div className="pt-24 px-4 sm:px-6 lg:px-12 pb-12">
-        
-
         <ClientTable
           clients={clients}
           onAdd={handleAddClient}
           onRemove={handleRemoveClient}
           onEdit={handleOpenEditModal}
+          onUpdateClient={(updatedClient) => {
+            setClients((prev) =>
+              prev.map((c) => (c.id === updatedClient.id ? updatedClient : c))
+            );
+          }}
           isLoading={isLoading}
         />
       </div>
@@ -157,20 +160,22 @@ export default function AdminClients() {
       {/* Notification */}
       {notification && (
         <div
-          className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
+          className={`fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm z-50 p-4 rounded-lg shadow-lg ${
             notification.type === "success"
               ? "bg-green-600 text-white"
               : "bg-red-600 text-white"
           }`}
         >
           <div className="flex items-center gap-2">
-            <span className="text-lg">
+            <span className="text-lg flex-shrink-0">
               {notification.type === "success" ? "✅" : "❌"}
             </span>
-            <span className="font-medium">{notification.message}</span>
+            <span className="font-medium text-sm sm:text-base flex-1">
+              {notification.message}
+            </span>
             <button
               onClick={() => setNotification(null)}
-              className="ml-auto text-white hover:text-gray-200"
+              className="ml-auto text-white hover:text-gray-200 flex-shrink-0 p-1"
             >
               ✕
             </button>

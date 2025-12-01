@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { FaUser, FaEnvelope, FaPhone, FaTimes } from "react-icons/fa";
+import {
+  FaUser,
+  FaEnvelope,
+  FaPhone,
+  FaTimes,
+  FaCreditCard,
+} from "react-icons/fa";
 
 export default function EditClientModal({ client, onClose, onEdit }) {
   const [form, setForm] = useState({
@@ -7,6 +13,7 @@ export default function EditClientModal({ client, onClose, onEdit }) {
     lastname: "",
     email: "",
     phone: "",
+    monthly_credit_enabled: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -18,12 +25,17 @@ export default function EditClientModal({ client, onClose, onEdit }) {
         lastname: client.lastname || "",
         email: client.email || "",
         phone: client.phone || "",
+        monthly_credit_enabled: client.monthly_credit_enabled || false,
       });
     }
   }, [client]);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value, type, checked } = e.target;
+    setForm({
+      ...form,
+      [name]: type === "checkbox" ? checked : value,
+    });
     if (error) setError(""); // Clear error when user starts typing
   };
 
@@ -53,7 +65,7 @@ export default function EditClientModal({ client, onClose, onEdit }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gradient-to-br from-gray-800 to-gray-900 p-8 rounded-2xl w-full max-w-lg text-white border border-gray-700/50 shadow-2xl">
+      <div className="bg-gradient-to-br from-gray-800 to-gray-900 p-4 sm:p-6 lg:p-8 rounded-2xl w-full max-w-lg text-white border border-gray-700/50 shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="bg-blue-500 p-3 rounded-xl">
@@ -81,7 +93,7 @@ export default function EditClientModal({ client, onClose, onEdit }) {
         )}
 
         <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">
                 Prénom <span className="text-red-400">*</span>
@@ -148,6 +160,30 @@ export default function EditClientModal({ client, onClose, onEdit }) {
                 onChange={handleChange}
                 className="w-full pl-10 p-3 rounded-lg bg-white/10 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-green-600/20 to-green-800/20 border border-green-500/30 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <FaCreditCard className="text-green-400 text-xl" />
+              <div className="flex-1">
+                <h3 className="text-white font-semibold mb-1">
+                  Crédit mensuel
+                </h3>
+                <p className="text-green-200 text-sm">
+                  Autoriser le client à payer à la fin du mois
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="monthly_credit_enabled"
+                  checked={form.monthly_credit_enabled}
+                  onChange={handleChange}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+              </label>
             </div>
           </div>
 

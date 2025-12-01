@@ -39,6 +39,9 @@ class FlatRateBooking
     #[ORM\JoinColumn(nullable: false)]
     private ?User $client = null;
 
+    #[ORM\Column(length: 50, options: ['default' => 'immediate'])]
+    private string $paymentMethod = 'immediate';
+
     public function getId(): ?int
     {
         return $this->id;
@@ -136,6 +139,18 @@ class FlatRateBooking
     public function setClient(?User $client): static
     {
         $this->client = $client;
+
+        return $this;
+    }
+
+    public function getPaymentMethod(): string
+    {
+        return $this->paymentMethod;
+    }
+
+    public function setPaymentMethod(string $paymentMethod): static
+    {
+        $this->paymentMethod = $paymentMethod;
 
         return $this;
     }

@@ -47,6 +47,7 @@ export default function AdminReservations() {
             price: parseFloat(res.price),
             type: res.type,
             hours: res.hours || null,
+            paymentMethod: res.paymentMethod || "immediate",
           }));
 
           setReservations(formattedReservations);

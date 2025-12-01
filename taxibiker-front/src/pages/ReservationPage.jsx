@@ -118,6 +118,35 @@ export default function ReservationPage() {
   const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
   const [pricingError, setPricingError] = useState(null);
 
+  // Payment method state
+  const [paymentMethod, setPaymentMethod] = useState("immediate");
+  const [userCreditInfo, setUserCreditInfo] = useState(null);
+
+  // Fetch user credit info on component mount
+  React.useEffect(() => {
+    const fetchUserCreditInfo = async () => {
+      if (!isAuthenticated) return;
+
+      try {
+        const response = await authService.authenticatedRequest(
+          "http://localhost:8000/api/user/credit"
+        );
+        const data = await response.json();
+
+        if (data.success) {
+          setUserCreditInfo(data.credit);
+          console.log("DEBUG - User credit info:", data.credit);
+        } else {
+          console.log("DEBUG - Failed to fetch credit info:", data);
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement des infos de crédit:", error);
+      }
+    };
+
+    fetchUserCreditInfo();
+  }, [isAuthenticated]);
+
   // Calculate price from backend API
   const calculatePriceFromBackend = async () => {
     // For classic mode: need both addresses
@@ -1265,6 +1294,118 @@ export default function ReservationPage() {
             </label>
           </div>
 
+          {/* Mode de paiement */}
+          {userCreditInfo?.monthly_credit_enabled && (
+            <div className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-sm border border-gray-600/50 rounded-2xl p-6 mt-6 shadow-xl">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-8 h-8 bg-gradient-to-r from-[#DD5212] to-orange-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white text-lg">💳</span>
+                </div>
+                <h3 className="text-white font-bold text-lg">
+                  Mode de paiement
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Paiement immédiat */}
+                <div
+                  className={`relative cursor-pointer transition-all duration-300 ${
+                    paymentMethod === "immediate"
+                      ? "ring-2 ring-[#DD5212] bg-gradient-to-br from-[#DD5212]/20 to-orange-600/10"
+                      : "hover:bg-gray-700/30"
+                  } rounded-xl border border-gray-600/50 p-4`}
+                  onClick={() => setPaymentMethod("immediate")}
+                >
+                  <input
+                    type="radio"
+                    id="payment-immediate"
+                    name="paymentMethod"
+                    value="immediate"
+                    checked={paymentMethod === "immediate"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="absolute top-4 right-4 accent-[#DD5212] scale-125"
+                  />
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                      <span className="text-white text-xl">💳</span>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-white font-semibold text-base mb-1">
+                        Paiement immédiat
+                      </h4>
+                      <p className="text-gray-300 text-sm leading-relaxed">
+                        Payez directement sur place lors de votre course
+                      </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full font-medium">
+                          ✓ Instantané
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Paiement crédit */}
+                <div
+                  className={`relative cursor-pointer transition-all duration-300 ${
+                    paymentMethod === "credit"
+                      ? "ring-2 ring-[#DD5212] bg-gradient-to-br from-[#DD5212]/20 to-orange-600/10"
+                      : "hover:bg-gray-700/30"
+                  } rounded-xl border border-gray-600/50 p-4`}
+                  onClick={() => setPaymentMethod("credit")}
+                >
+                  <input
+                    type="radio"
+                    id="payment-credit"
+                    name="paymentMethod"
+                    value="credit"
+                    checked={paymentMethod === "credit"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="absolute top-4 right-4 accent-[#DD5212] scale-125"
+                  />
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                      <span className="text-white text-xl">📅</span>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-white font-semibold text-base mb-1">
+                        Crédit mensuel
+                      </h4>
+                      <p className="text-gray-300 text-sm leading-relaxed">
+                        Ajouté à votre facture de fin de mois
+                      </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
+                          📊 Crédit: {userCreditInfo?.current_credit}€
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Info supplémentaire pour le crédit */}
+              {paymentMethod === "credit" && (
+                <div className="mt-4 p-4 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-blue-500/30 rounded-xl">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-blue-400 text-sm">💡</span>
+                    </div>
+                    <div>
+                      <p className="text-blue-300 text-sm font-medium mb-1">
+                        Paiement différé activé
+                      </p>
+                      <p className="text-blue-200/80 text-xs leading-relaxed">
+                        Cette course sera ajoutée à votre crédit mensuel. Vous
+                        recevrez une facture récapitulative en fin de mois.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Loading Animation */}
           {isCalculatingPrice && pickupAddress && dropAddress && (
             <div className="mt-4 bg-gray-800/50 border border-gray-700 rounded-lg p-4 flex items-center justify-center">
@@ -1317,6 +1458,7 @@ export default function ReservationPage() {
                   hours: tripType === "time" ? duration : undefined,
                   stop: stopChecked ? stopAddress : null,
                   excessBaggage: bagage,
+                  paymentMethod: paymentMethod,
                 };
 
                 const response = await authService.authenticatedRequest(
