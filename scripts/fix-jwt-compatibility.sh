@@ -1,3 +1,44 @@
+#!/bin/bash
+
+# Script pour résoudre le conflit de versions JWT/Clock
+echo "🔧 Résolution du conflit lexik/jwt-authentication-bundle"
+
+cd taxibiker-back
+
+# Couleurs
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+log_info() {
+    echo -e "${GREEN}[✓]${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[⚠]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[✗]${NC} $1"
+}
+
+# Sauvegarde
+if [ -f "composer.json" ]; then
+    cp composer.json composer.json.backup.$(date +%Y%m%d_%H%M%S)
+    log_info "Sauvegarde de composer.json créée"
+fi
+
+# Nettoyer complètement
+log_warning "Nettoyage complet des dépendances..."
+rm -f composer.lock
+rm -rf vendor/
+
+# Utiliser une version compatible
+log_info "Configuration de lexik/jwt-authentication-bundle version 2.20 (compatible PHP 8.2)"
+
+# Créer un composer.json temporaire avec la bonne version
+cat > composer.json.tmp << 'EOF'
 {
     "type": "project",
     "license": "proprietary",
@@ -89,3 +130,46 @@
         "fakerphp/faker": "^1.24"
     }
 }
+EOF
+
+# Remplacer le composer.json
+mv composer.json.tmp composer.json
+log_info "composer.json mis à jour avec lexik/jwt-authentication-bundle v2.20"
+
+# Installation
+log_info "Installation des dépendances..."
+if composer install --no-interaction; then
+    log_info "✅ Dépendances installées avec succès!"
+    
+    # Test de la configuration
+    if php bin/console --version > /dev/null 2>&1; then
+        log_info "✅ Symfony fonctionne correctement"
+        
+        echo ""
+        echo "🎉 Problème résolu !"
+        echo ""
+        echo "📋 Prochaines étapes :"
+        echo "1. Continuer avec : ./scripts/setup-dev.sh"
+        echo "2. Ou démarrer : ./scripts/start-all.sh"
+        
+    else
+        log_error "❌ Problème avec la configuration Symfony"
+        exit 1
+    fi
+else
+    log_error "❌ Échec de l'installation"
+    
+    # Restaurer la sauvegarde
+    if [ -f "composer.json.backup.$(date +%Y%m%d)_"* ]; then
+        cp composer.json.backup.* composer.json
+        log_warning "Composer.json restauré depuis la sauvegarde"
+    fi
+    
+    echo ""
+    echo "💡 Solutions alternatives :"
+    echo "1. Mettre à jour PHP vers 8.3+ si possible"
+    echo "2. Utiliser une version plus ancienne de Symfony"
+    echo "3. Consulter TROUBLESHOOTING.md"
+    
+    exit 1
+fi

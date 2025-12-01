@@ -1,0 +1,101 @@
+{
+  "environments": {
+    "development": {
+      "name": "Développement Local",
+      "frontend_url": "http://localhost:3000",
+      "backend_url": "http://localhost:8000",
+      "api_url": "http://localhost:8000/api",
+      "database": {
+        "type": "mysql",
+        "host": "127.0.0.1",
+        "port": 3306,
+        "name": "app",
+        "user": "app",
+        "password": "!ChangeMe!"
+      },
+      "features": {
+        "debug": true,
+        "profiler": true,
+        "fixtures": true,
+        "dev_toolbar": true
+      }
+    },
+    "staging": {
+      "name": "Environnement de Test",
+      "frontend_url": "https://staging.taxibiker.com",
+      "backend_url": "https://staging.taxibiker.com",
+      "api_url": "https://staging.taxibiker.com/api",
+      "database": {
+        "type": "mysql",
+        "host": "staging-db.planethoster.com",
+        "port": 3306,
+        "name": "taxibiker_staging",
+        "user": "staging_user",
+        "password": "env:DATABASE_PASSWORD"
+      },
+      "features": {
+        "debug": false,
+        "profiler": false,
+        "fixtures": false,
+        "dev_toolbar": false,
+        "monitoring": true
+      }
+    },
+    "production": {
+      "name": "Production",
+      "frontend_url": "https://taxibiker.com",
+      "backend_url": "https://taxibiker.com",
+      "api_url": "https://taxibiker.com/api",
+      "database": {
+        "type": "mysql",
+        "host": "prod-db.planethoster.com",
+        "port": 3306,
+        "name": "taxibiker_prod",
+        "user": "prod_user",
+        "password": "env:DATABASE_PASSWORD"
+      },
+      "features": {
+        "debug": false,
+        "profiler": false,
+        "fixtures": false,
+        "dev_toolbar": false,
+        "monitoring": true,
+        "analytics": true,
+        "error_reporting": true
+      }
+    }
+  },
+  "deployment": {
+    "staging": {
+      "branch": "main",
+      "auto_deploy": true,
+      "require_tests": true,
+      "notifications": {
+        "slack": false,
+        "email": true
+      }
+    },
+    "production": {
+      "branch": "production",
+      "auto_deploy": true,
+      "require_tests": true,
+      "require_approval": false,
+      "notifications": {
+        "slack": true,
+        "email": true
+      }
+    }
+  },
+  "monitoring": {
+    "health_checks": {
+      "frontend": "/",
+      "backend": "/api/health",
+      "database": "/api/health/database"
+    },
+    "alerts": {
+      "response_time_threshold": 2000,
+      "error_rate_threshold": 5,
+      "uptime_threshold": 99.9
+    }
+  }
+}

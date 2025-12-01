@@ -1,0 +1,347 @@
+name: Deploy to PlanetHoster
+
+on:
+  push:
+    branches: [main, production]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: "18"
+  PHP_VERSION: "8.2"
+
+jobs:
+  test-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: taxibiker-front/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./taxibiker-front
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: ./taxibiker-front
+        run: npm run lint
+
+      - name: Build frontend
+        working-directory: ./taxibiker-front
+        run: npm run build
+
+      - name: Upload frontend build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: taxibiker-front/dist/
+          retention-days: 1
+
+  test-backend:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: taxibiker_test
+          MYSQL_USER: taxibiker
+          MYSQL_PASSWORD: taxibiker
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+        ports:
+          - 3306:3306
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+           extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json, mysql
+          tools: composer:v2
+
+      - name: Get composer cache directory
+        id: composer-cache
+        working-directory: ./taxibiker-back
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install backend dependencies
+        working-directory: ./taxibiker-back
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Create .env.test file
+        working-directory: ./taxibiker-back
+        run: |
+           cat > .env.test << EOF
+           APP_ENV=test
+           APP_SECRET=test_secret_key_for_github_actions
+           DATABASE_URL=mysql://taxibiker:taxibiker@127.0.0.1:3306/taxibiker_test?serverVersion=8.0&charset=utf8mb4
+           JWT_SECRET_KEY=%kernel.project_dir%/config/jwt/private.pem
+           JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem
+           JWT_PASSPHRASE=test_passphrase
+           LEXIK_JWT_AUTHENTICATION_BUNDLE_VERSION=2.20
+           EOF
+
+      - name: Generate JWT keys
+        working-directory: ./taxibiker-back
+        run: |
+          mkdir -p config/jwt
+          openssl genpkey -out config/jwt/private.pem -aes256 -algorithm rsa -pkeyopt rsa_keygen_bits:4096 -pass pass:test_passphrase
+          openssl pkey -in config/jwt/private.pem -out config/jwt/public.pem -pubout -passin pass:test_passphrase
+
+      - name: Run database migrations
+        working-directory: ./taxibiker-back
+        run: php bin/console doctrine:migrations:migrate --no-interaction --env=test
+
+      - name: Validate Symfony configuration
+        working-directory: ./taxibiker-back
+        run: |
+          php bin/console lint:container --env=test
+          php bin/console doctrine:schema:validate --env=test
+
+  deploy-staging:
+    needs: [test-frontend, test-backend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download frontend build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: taxibiker-front/dist/
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+           extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json, mysql
+          tools: composer:v2
+
+      - name: Install backend dependencies for production
+        working-directory: ./taxibiker-back
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Create deployment package
+        run: |
+          # Créer le dossier de déploiement
+          mkdir -p deploy/public_html
+
+          # Copier le frontend buildé
+          cp -r taxibiker-front/dist/* deploy/public_html/
+
+          # Copier le backend dans un sous-dossier api
+          mkdir -p deploy/public_html/api
+          cp -r taxibiker-back/* deploy/public_html/api/
+
+          # Créer le fichier .htaccess pour le frontend
+          cat > deploy/public_html/.htaccess << 'EOF'
+          RewriteEngine On
+
+          # API routes
+          RewriteRule ^api/(.*)$ api/public/index.php [QSA,L]
+
+          # Frontend routes (SPA)
+          RewriteCond %{REQUEST_FILENAME} !-f
+          RewriteCond %{REQUEST_FILENAME} !-d
+          RewriteRule . /index.html [L]
+          EOF
+
+          # Créer le fichier .htaccess pour l'API
+          cat > deploy/public_html/api/public/.htaccess << 'EOF'
+          RewriteEngine On
+          RewriteCond %{REQUEST_FILENAME} !-f
+          RewriteRule ^(.*)$ index.php [QSA,L]
+          EOF
+
+      - name: Deploy to PlanetHoster Staging
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.PLANETHOSTER_STAGING_HOST }}
+          username: ${{ secrets.PLANETHOSTER_STAGING_USERNAME }}
+          password: ${{ secrets.PLANETHOSTER_STAGING_PASSWORD }}
+          local-dir: ./deploy/public_html/
+          server-dir: /public_html/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/vendor/**
+            **/.env*
+            **/var/cache/**
+            **/var/log/**
+
+      - name: Run post-deployment commands
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PLANETHOSTER_STAGING_HOST }}
+          username: ${{ secrets.PLANETHOSTER_STAGING_USERNAME }}
+          password: ${{ secrets.PLANETHOSTER_STAGING_PASSWORD }}
+          script: |
+            cd public_html/api
+
+            # Installer les dépendances Composer si nécessaire
+            if [ ! -d "vendor" ]; then
+              composer install --no-dev --optimize-autoloader --no-interaction
+            fi
+
+            # Créer les dossiers nécessaires
+            mkdir -p var/cache var/log config/jwt
+
+            # Générer les clés JWT si elles n'existent pas
+            if [ ! -f "config/jwt/private.pem" ]; then
+              openssl genpkey -out config/jwt/private.pem -aes256 -algorithm rsa -pkeyopt rsa_keygen_bits:4096 -pass pass:${{ secrets.JWT_PASSPHRASE }}
+              openssl pkey -in config/jwt/private.pem -out config/jwt/public.pem -pubout -passin pass:${{ secrets.JWT_PASSPHRASE }}
+            fi
+
+            # Vider le cache
+            php bin/console cache:clear --env=prod --no-debug
+
+            # Exécuter les migrations
+            php bin/console doctrine:migrations:migrate --no-interaction --env=prod
+
+            # Définir les permissions
+            chmod -R 755 var/
+            chmod -R 644 config/jwt/*.pem
+
+  deploy-production:
+    needs: [test-frontend, test-backend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/production' && github.event_name == 'push'
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download frontend build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: taxibiker-front/dist/
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+           extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json, mysql
+          tools: composer:v2
+
+      - name: Install backend dependencies for production
+        working-directory: ./taxibiker-back
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Create deployment package
+        run: |
+          # Créer le dossier de déploiement
+          mkdir -p deploy/public_html
+
+          # Copier le frontend buildé
+          cp -r taxibiker-front/dist/* deploy/public_html/
+
+          # Copier le backend dans un sous-dossier api
+          mkdir -p deploy/public_html/api
+          cp -r taxibiker-back/* deploy/public_html/api/
+
+          # Créer le fichier .htaccess pour le frontend
+          cat > deploy/public_html/.htaccess << 'EOF'
+          RewriteEngine On
+
+          # API routes
+          RewriteRule ^api/(.*)$ api/public/index.php [QSA,L]
+
+          # Frontend routes (SPA)
+          RewriteCond %{REQUEST_FILENAME} !-f
+          RewriteCond %{REQUEST_FILENAME} !-d
+          RewriteRule . /index.html [L]
+          EOF
+
+          # Créer le fichier .htaccess pour l'API
+          cat > deploy/public_html/api/public/.htaccess << 'EOF'
+          RewriteEngine On
+          RewriteCond %{REQUEST_FILENAME} !-f
+          RewriteRule ^(.*)$ index.php [QSA,L]
+          EOF
+
+      - name: Deploy to PlanetHoster Production
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.PLANETHOSTER_PROD_HOST }}
+          username: ${{ secrets.PLANETHOSTER_PROD_USERNAME }}
+          password: ${{ secrets.PLANETHOSTER_PROD_PASSWORD }}
+          local-dir: ./deploy/public_html/
+          server-dir: /public_html/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/vendor/**
+            **/.env*
+            **/var/cache/**
+            **/var/log/**
+
+      - name: Run post-deployment commands
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PLANETHOSTER_PROD_HOST }}
+          username: ${{ secrets.PLANETHOSTER_PROD_USERNAME }}
+          password: ${{ secrets.PLANETHOSTER_PROD_PASSWORD }}
+          script: |
+            cd public_html/api
+
+            # Installer les dépendances Composer si nécessaire
+            if [ ! -d "vendor" ]; then
+              composer install --no-dev --optimize-autoloader --no-interaction
+            fi
+
+            # Créer les dossiers nécessaires
+            mkdir -p var/cache var/log config/jwt
+
+            # Générer les clés JWT si elles n'existent pas
+            if [ ! -f "config/jwt/private.pem" ]; then
+              openssl genpkey -out config/jwt/private.pem -aes256 -algorithm rsa -pkeyopt rsa_keygen_bits:4096 -pass pass:${{ secrets.JWT_PASSPHRASE }}
+              openssl pkey -in config/jwt/private.pem -out config/jwt/public.pem -pubout -passin pass:${{ secrets.JWT_PASSPHRASE }}
+            fi
+
+            # Vider le cache
+            php bin/console cache:clear --env=prod --no-debug
+
+            # Exécuter les migrations
+            php bin/console doctrine:migrations:migrate --no-interaction --env=prod
+
+            # Définir les permissions
+            chmod -R 755 var/
+            chmod -R 644 config/jwt/*.pem
