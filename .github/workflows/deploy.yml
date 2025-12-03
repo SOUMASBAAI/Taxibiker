@@ -160,7 +160,7 @@ jobs:
 
       - name: Install backend dependencies for production
         working-directory: ./taxibiker-back
-        run: composer install --no-dev --optimize-autoloader --no-interaction
+        run: composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
       - name: Create deployment package
         run: |
@@ -222,7 +222,7 @@ jobs:
 
             # Installer les dépendances Composer si nécessaire
             if [ ! -d "vendor" ]; then
-              composer install --no-dev --optimize-autoloader --no-interaction
+              composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
             fi
 
             # Créer les dossiers nécessaires
@@ -278,7 +278,7 @@ jobs:
 
       - name: Install backend dependencies for production
         working-directory: ./taxibiker-back
-        run: composer install --no-dev --optimize-autoloader --no-interaction
+        run: composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
       - name: Create deployment package
         run: |
@@ -340,7 +340,7 @@ jobs:
 
             # Installer les dépendances Composer si nécessaire
             if [ ! -d "vendor" ]; then
-              composer install --no-dev --optimize-autoloader --no-interaction
+              composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
             fi
 
             # Créer les dossiers nécessaires
