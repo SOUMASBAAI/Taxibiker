@@ -50,7 +50,7 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: taxibiker_test
+          MYSQL_DATABASE: taxibiker
           MYSQL_USER: taxibiker
           MYSQL_PASSWORD: taxibiker
         options: >-
@@ -94,12 +94,18 @@ jobs:
           cat > .env.test << EOF
           APP_ENV=test
           APP_SECRET=test_secret_key_for_github_actions
-          DATABASE_URL=mysql://taxibiker:taxibiker@127.0.0.1:3306/taxibiker_test?serverVersion=8.0&charset=utf8mb4
+          DATABASE_URL=mysql://root:root@127.0.0.1:3306/taxibiker_test?serverVersion=8.0&charset=utf8mb4
           JWT_SECRET_KEY=%kernel.project_dir%/config/jwt/private.pem
           JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem
           JWT_PASSPHRASE=test_passphrase
           LEXIK_JWT_AUTHENTICATION_BUNDLE_VERSION=2.20
           EOF
+
+      - name: Create test database with suffix
+        run: |
+          # Doctrine ajoute automatiquement _test au nom de la base en environnement test
+          # Si la base s'appelle taxibiker_test, Doctrine cherchera taxibiker_test_test
+          mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE IF NOT EXISTS taxibiker_test_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" || true
 
       - name: Generate JWT keys
         working-directory: ./taxibiker-back

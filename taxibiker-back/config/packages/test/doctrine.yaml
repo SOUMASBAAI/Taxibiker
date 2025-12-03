@@ -1,0 +1,4 @@
+doctrine:
+    dbal:
+        # Désactiver le suffixe automatique pour les tests GitHub Actions
+        dbname_suffix: ""
