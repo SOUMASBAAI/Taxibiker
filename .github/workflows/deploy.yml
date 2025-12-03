@@ -335,6 +335,7 @@ jobs:
           host: ${{ secrets.PLANETHOSTER_PROD_HOST }}
           username: ${{ secrets.PLANETHOSTER_PROD_USERNAME }}
           password: ${{ secrets.PLANETHOSTER_PROD_PASSWORD }}
+          port: 5022
           script: |
             cd public_html/api
 
