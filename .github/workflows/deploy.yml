@@ -129,7 +129,7 @@ jobs:
   deploy-staging:
     needs: []
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: false # Staging désactivé - déploiement direct en production
     environment: staging
 
     steps:
@@ -247,7 +247,7 @@ jobs:
   deploy-production:
     needs: []
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/production' && github.event_name == 'push'
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/production') && github.event_name == 'push'
     environment: production
 
     steps:
