@@ -17,7 +17,7 @@ import {
 import AdminHeader from "../components/admin/AdminHeader";
 import ReservationCard from "../components/admin/ReservationCard";
 import ReservationModal from "../components/admin/ReservationModal";
-import authService from "../services/authService";
+// import authService from "../services/authService";
 
 // Weekly Calendar Component
 const WeeklyCalendar = ({ reservations, onReservationClick, onDayClick }) => {
@@ -72,7 +72,7 @@ const WeeklyCalendar = ({ reservations, onReservationClick, onDayClick }) => {
   };
 
   // Pour mobile, on affiche seulement le jour courant
-  const mobileDay = [currentDay];
+  const _mobileDay = [currentDay];
   const mobileDayReservations =
     reservationsByDate[currentDay.toDateString()] || [];
 

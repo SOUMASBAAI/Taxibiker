@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-catch */
 const API_URL = "http://localhost:8000/api";
 
 class AuthService {

@@ -160,7 +160,7 @@ export default function ReservationModal({
     const body = `Bonjour ${reservation.firstname},\n\nVeuillez trouver ci-joint votre facture pour le service de transport du ${invoiceData.date}.\n\nTotal: ${invoiceData.total}€\n\nCordialement,\nTAXIBIKER Cédric`;
 
     // Create a temporary text file with invoice content for email attachment
-    const invoiceText = `FACTURE TAXIBIKER Cédric
+    const _invoiceText = `FACTURE TAXIBIKER Cédric
     
 Client: ${invoiceData.clientName}
 Date du service: ${invoiceData.date} à ${invoiceData.time}
