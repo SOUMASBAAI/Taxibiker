@@ -237,8 +237,14 @@ jobs:
             # Vider le cache
             php bin/console cache:clear --env=prod --no-debug
 
-            # Exécuter les migrations
+            # Exécuter les migrations (automatique)
             php bin/console doctrine:migrations:migrate --no-interaction --env=prod
+
+            # Charger les fixtures automatiquement si la variable LOAD_FIXTURES est définie
+            if [ "${{ vars.LOAD_FIXTURES }}" = "true" ]; then
+              echo "📥 Chargement automatique des fixtures..."
+              php bin/console doctrine:fixtures:load --no-interaction --env=prod --append 2>&1 || echo "⚠️  Fixtures déjà chargées ou erreur (non bloquant)"
+            fi
 
             # Définir les permissions
             chmod -R 755 var/
@@ -356,8 +362,14 @@ jobs:
             # Vider le cache
             php bin/console cache:clear --env=prod --no-debug
 
-            # Exécuter les migrations
+            # Exécuter les migrations (automatique)
             php bin/console doctrine:migrations:migrate --no-interaction --env=prod
+
+            # Charger les fixtures automatiquement si la variable LOAD_FIXTURES est définie
+            if [ "${{ vars.LOAD_FIXTURES }}" = "true" ]; then
+              echo "📥 Chargement automatique des fixtures..."
+              php bin/console doctrine:fixtures:load --no-interaction --env=prod --append 2>&1 || echo "⚠️  Fixtures déjà chargées ou erreur (non bloquant)"
+            fi
 
             # Définir les permissions
             chmod -R 755 var/
