@@ -62,8 +62,8 @@ mysql://UTILISATEUR:MOT_DE_PASSE@HOST:PORT/NOM_BASE?serverVersion=8.0&charset=ut
 
 - ✅ **Utilisateur** : `ueeecgbbue_soumia`
 - ✅ **Base de données** : `ueeecgbbue_taxibiker_prod`
+- ✅ **Host MySQL** : `localhost` (recommandé par PlanetHoster)
 - ❓ **Mot de passe DB** : À récupérer dans votre panneau PlanetHoster
-- ❓ **Host MySQL** : Probablement `mysql.n0c.com` ou similaire
 
 **Où trouver ces informations manquantes :**
 
@@ -73,7 +73,7 @@ mysql://UTILISATEUR:MOT_DE_PASSE@HOST:PORT/NOM_BASE?serverVersion=8.0&charset=ut
 **Exemple complet :**
 
 ```bash
-DATABASE_URL=mysql://ueeecgbbue_soumia:abc123xyz@mysql.n0c.com:3306/ueeecgbbue_taxibiker_prod?serverVersion=8.0&charset=utf8mb4
+DATABASE_URL=mysql://ueeecgbbue_soumia:abc123xyz@localhost:3306/ueeecgbbue_taxibiker_prod?serverVersion=mariadb-10.6&charset=utf8mb4
 ```
 
 ### 3. JWT_PASSPHRASE
@@ -93,7 +93,7 @@ APP_ENV=prod
 APP_DEBUG=false
 APP_SECRET=a1b2c3d4e5f6789abcdef0123456789
 
-DATABASE_URL=mysql://ueeecgbbue_soumia:monpassword123@mysql.n0c.com:3306/ueeecgbbue_taxibiker_prod?serverVersion=8.0&charset=utf8mb4
+DATABASE_URL=mysql://ueeecgbbue_soumia:monpassword123@localhost:3306/ueeecgbbue_taxibiker_prod?serverVersion=mariadb-10.6&charset=utf8mb4
 
 JWT_SECRET_KEY=%kernel.project_dir%/config/jwt/private.pem
 JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem
