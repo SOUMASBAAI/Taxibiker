@@ -7,19 +7,31 @@ use Psr\Log\LoggerInterface;
 
 class WhatsAppService
 {
-    private Client $twilioClient;
+    private ?Client $twilioClient;
     private string $twilioWhatsAppNumber;
     private LoggerInterface $logger;
+    private bool $isEnabled;
 
     public function __construct(
-        string $twilioAccountSid,
-        string $twilioAuthToken,
-        string $twilioWhatsAppNumber,
+        ?string $twilioAccountSid,
+        ?string $twilioAuthToken,
+        ?string $twilioWhatsAppNumber,
         LoggerInterface $logger
     ) {
-        $this->twilioClient = new Client($twilioAccountSid, $twilioAuthToken);
-        $this->twilioWhatsAppNumber = $twilioWhatsAppNumber;
+        // Initialiser le logger en premier
         $this->logger = $logger;
+        
+        // Vérifier si les credentials Twilio sont configurés
+        $this->isEnabled = !empty($twilioAccountSid) && !empty($twilioAuthToken) && !empty($twilioWhatsAppNumber);
+        
+        if ($this->isEnabled) {
+            $this->twilioClient = new Client($twilioAccountSid, $twilioAuthToken);
+            $this->twilioWhatsAppNumber = $twilioWhatsAppNumber;
+        } else {
+            $this->twilioClient = null;
+            $this->twilioWhatsAppNumber = '';
+            $this->logger->info('WhatsApp Service désactivé : credentials Twilio non configurés');
+        }
     }
 
     /**
@@ -27,6 +39,15 @@ class WhatsAppService
      */
     public function sendMessage(string $to, string $message): bool
     {
+        // Si le service WhatsApp n'est pas configuré, on simule un envoi réussi
+        if (!$this->isEnabled) {
+            $this->logger->info('WhatsApp désactivé - Message simulé', [
+                'to' => $to,
+                'message' => substr($message, 0, 100) . '...'
+            ]);
+            return true;
+        }
+
         try {
             // Format du numéro : +33XXXXXXXXX
             $formattedNumber = $this->formatPhoneNumber($to);

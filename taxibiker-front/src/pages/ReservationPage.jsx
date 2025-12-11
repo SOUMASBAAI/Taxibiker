@@ -1611,6 +1611,11 @@ export default function ReservationPage() {
                   paymentMethod: paymentMethod,
                 };
 
+                console.log(
+                  "Données de réservation envoyées:",
+                  reservationData
+                );
+
                 const response = await authService.authenticatedRequest(
                   buildApiUrl("reservations"),
                   {
@@ -1618,6 +1623,19 @@ export default function ReservationPage() {
                     body: JSON.stringify(reservationData),
                   }
                 );
+
+                console.log("Statut de la réponse:", response.status);
+
+                if (!response.ok) {
+                  const errorText = await response.text();
+                  console.error("Erreur du serveur:", errorText);
+                  throw new Error(
+                    `Erreur serveur (${response.status}): ${errorText.substring(
+                      0,
+                      200
+                    )}...`
+                  );
+                }
 
                 const result = await response.json();
 
