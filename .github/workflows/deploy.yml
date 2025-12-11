@@ -244,6 +244,8 @@ jobs:
             if [ "${{ vars.LOAD_FIXTURES }}" = "true" ]; then
               echo "📥 Chargement automatique des fixtures..."
               php bin/console doctrine:fixtures:load --no-interaction --env=prod --append 2>&1 || echo "⚠️  Fixtures déjà chargées ou erreur (non bloquant)"
+            else
+              echo "⏭️  Chargement des fixtures désactivé (LOAD_FIXTURES != true)"
             fi
 
             # Définir les permissions
@@ -369,6 +371,8 @@ jobs:
             if [ "${{ vars.LOAD_FIXTURES }}" = "true" ]; then
               echo "📥 Chargement automatique des fixtures..."
               php bin/console doctrine:fixtures:load --no-interaction --env=prod --append 2>&1 || echo "⚠️  Fixtures déjà chargées ou erreur (non bloquant)"
+            else
+              echo "⏭️  Chargement des fixtures désactivé (LOAD_FIXTURES != true)"
             fi
 
             # Définir les permissions

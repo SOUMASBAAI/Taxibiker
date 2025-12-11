@@ -191,3 +191,4 @@ php -r "echo parse_url('mysql://user:pass@host:3306/db', PHP_URL_SCHEME);"
 
 **Corrigez le format DATABASE_URL avec l'encodage correct du mot de passe !** ✅
 
+

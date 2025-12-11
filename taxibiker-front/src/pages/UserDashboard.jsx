@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import ViewReservationModal from "../Modal/ViewReservationModal";
+import { buildApiUrl } from "../config/api.js";
 import EditReservationModal from "../Modal/EditReservationModal";
 import DashboardHeader from "../components/user/DashboardHeader";
 import CreditCard from "../components/user/CreditCard";
@@ -44,7 +45,7 @@ export default function UserDashboard() {
     const fetchReservations = async () => {
       try {
         const response = await authService.authenticatedRequest(
-          "http://localhost:8000/api/reservations/my"
+          buildApiUrl("reservations/my")
         );
         const data = await response.json();
 
@@ -103,7 +104,7 @@ export default function UserDashboard() {
     const fetchCreditInfo = async () => {
       try {
         const response = await authService.authenticatedRequest(
-          "http://localhost:8000/api/user/credit"
+          buildApiUrl("user/credit")
         );
         const data = await response.json();
 
@@ -128,7 +129,7 @@ export default function UserDashboard() {
       const dateTime = new Date(dateTimeStr);
 
       const response = await authService.authenticatedRequest(
-        `http://localhost:8000/api/reservations/${updated.id}/update`,
+        buildApiUrl(`reservations/${updated.id}/update`),
         {
           method: "PATCH",
           body: JSON.stringify({
@@ -184,7 +185,7 @@ export default function UserDashboard() {
 
     try {
       const response = await authService.authenticatedRequest(
-        `http://localhost:8000/api/reservations/${id}/cancel`,
+        buildApiUrl(`reservations/${id}/cancel`),
         {
           method: "POST",
         }
@@ -249,7 +250,7 @@ export default function UserDashboard() {
 
     try {
       const response = await authService.authenticatedRequest(
-        `http://localhost:8000/api/invoice/${reservationId}`
+        buildApiUrl(`invoice/${reservationId}`)
       );
 
       if (response.ok) {

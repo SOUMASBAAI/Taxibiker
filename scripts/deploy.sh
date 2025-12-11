@@ -214,6 +214,14 @@ php bin/console cache:clear --env=prod --no-debug
 echo "🗄️ Exécution des migrations..."
 php bin/console doctrine:migrations:migrate --no-interaction --env=prod
 
+# Charger les fixtures seulement si explicitement demandé
+if [ "$LOAD_FIXTURES" = "true" ]; then
+    echo "📥 Chargement des fixtures..."
+    php bin/console doctrine:fixtures:load --no-interaction --env=prod --append 2>&1 || echo "⚠️  Fixtures déjà chargées ou erreur (non bloquant)"
+else
+    echo "⏭️  Chargement des fixtures désactivé (utilisez LOAD_FIXTURES=true pour les charger)"
+fi
+
 # Définir les permissions appropriées
 echo "🔒 Configuration des permissions..."
 chmod -R 755 var/

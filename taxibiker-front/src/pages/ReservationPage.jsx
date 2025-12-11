@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { FaPlane, FaTrain } from "react-icons/fa";
+import { buildApiUrl } from "../config/api.js";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import {
@@ -129,7 +130,7 @@ export default function ReservationPage() {
 
       try {
         const response = await authService.authenticatedRequest(
-          "http://localhost:8000/api/user/credit"
+          buildApiUrl("user/credit")
         );
         const data = await response.json();
 
@@ -192,7 +193,9 @@ export default function ReservationPage() {
       requestData.excessBaggage = bagage ? 1 : 0;
 
       const response = await fetch(
-        "http://localhost:8000/api/pricing/calculate",
+        `${
+          import.meta.env.PROD ? "/api" : "http://localhost:8000/api"
+        }/pricing/calculate`,
         {
           method: "POST",
           headers: {
@@ -1462,7 +1465,7 @@ export default function ReservationPage() {
                 };
 
                 const response = await authService.authenticatedRequest(
-                  "http://localhost:8000/api/reservations",
+                  buildApiUrl("reservations"),
                   {
                     method: "POST",
                     body: JSON.stringify(reservationData),
