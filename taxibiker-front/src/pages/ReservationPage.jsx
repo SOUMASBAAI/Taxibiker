@@ -125,6 +125,7 @@ export default function ReservationPage() {
   const [paymentMethod, setPaymentMethod] = useState("immediate");
   const [userCreditInfo, setUserCreditInfo] = useState(null);
   const [showRestoredMessage, setShowRestoredMessage] = useState(false);
+  const [reservationSuccess, setReservationSuccess] = useState(null);
 
   // Fonction pour sauvegarder les données du formulaire
   const saveFormData = () => {
@@ -1643,11 +1644,18 @@ export default function ReservationPage() {
                   // Nettoyer les données sauvegardées après succès
                   reservationStorage.clearReservationData();
 
-                  alert(
-                    `✅ Réservation confirmée !\n\nNuméro: #${result.reservation.id}\nMontant: ${result.reservation.price}€\n\nVous recevrez un email de confirmation.`
-                  );
-                  // Rediriger vers le dashboard
-                  navigate("/dashboard");
+                  // Afficher le message de succès
+                  setReservationSuccess({
+                    id: result.reservation.id,
+                    price: result.reservation.price,
+                    departure: result.reservation.departure,
+                    arrival: result.reservation.arrival,
+                  });
+
+                  // Rediriger vers le dashboard après 3 secondes
+                  setTimeout(() => {
+                    navigate("/dashboard");
+                  }, 3000);
                 } else {
                   alert("❌ Erreur: " + (result.error || "Erreur inconnue"));
                 }
@@ -1716,6 +1724,108 @@ export default function ReservationPage() {
 
       {/* WhatsApp Button */}
       <WhatsappButton number="33612345678" />
+
+      {/* Modal de confirmation de réservation */}
+      {reservationSuccess && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden animate-in fade-in duration-300">
+            {/* Header avec icône de succès */}
+            <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 text-center">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg
+                  className="w-8 h-8 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">
+                Réservation confirmée !
+              </h2>
+              <p className="text-green-100">
+                Votre demande a été enregistrée avec succès
+              </p>
+            </div>
+
+            {/* Contenu */}
+            <div className="p-6 space-y-4">
+              <div className="text-center space-y-3">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-sm text-gray-600 mb-1">
+                    Numéro de réservation
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    #{reservationSuccess.id}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs text-gray-600 mb-1">Départ</p>
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {reservationSuccess.departure}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs text-gray-600 mb-1">Arrivée</p>
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {reservationSuccess.arrival}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-[#DD5212]/10 rounded-lg p-4">
+                  <p className="text-sm text-gray-600 mb-1">Montant</p>
+                  <p className="text-3xl font-bold text-[#DD5212]">
+                    {reservationSuccess.price}€
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <svg
+                    className="w-5 h-5 text-blue-500 mt-0.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-medium text-blue-900">
+                      Prochaines étapes
+                    </p>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Vous recevrez une confirmation par email et WhatsApp.
+                      Votre réservation sera traitée dans les plus brefs délais.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="w-full bg-[#DD5212] hover:bg-[#c14610] text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+              >
+                Aller au tableau de bord
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
