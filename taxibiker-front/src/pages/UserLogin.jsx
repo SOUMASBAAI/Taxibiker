@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import authService from "../services/authService";
+import reservationStorage from "../services/reservationStorage";
 
 export default function UserLogin() {
   const [email, setEmail] = useState("");
@@ -27,8 +28,19 @@ export default function UserLogin() {
       await authService.login(email, password);
       setSuccess("Connexion réussie ! Redirection...");
 
-      // Rediriger vers le dashboard après 1 seconde
-      setTimeout(() => navigate("/dashboard"), 1000);
+      // Vérifier s'il y a une URL de redirection sauvegardée
+      const redirectUrl = reservationStorage.getAndClearRedirectUrl();
+
+      // Rediriger vers l'URL sauvegardée ou le dashboard par défaut
+      setTimeout(() => {
+        if (redirectUrl) {
+          // Marquer que l'utilisateur vient de se connecter pour la restauration des données
+          sessionStorage.setItem("taxibiker_just_logged_in", "true");
+          navigate(redirectUrl);
+        } else {
+          navigate("/dashboard");
+        }
+      }, 1000);
     } catch (err) {
       setError(err.message || "Identifiants invalides");
       setIsLoading(false);

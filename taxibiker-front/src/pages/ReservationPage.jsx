@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaPlane, FaTrain } from "react-icons/fa";
 import { buildApiUrl } from "../config/api.js";
 import DatePicker from "react-datepicker";
@@ -11,6 +11,7 @@ import {
 } from "@react-google-maps/api";
 import { useNavigate } from "react-router-dom";
 import authService from "../services/authService";
+import reservationStorage from "../services/reservationStorage";
 import Header from "../components/Header";
 import DashboardHeader from "../components/user/DashboardHeader";
 import WhatsappButton from "../components/WhatsappButton";
@@ -101,6 +102,7 @@ export default function ReservationPage() {
   const [transportPickup, setTransportPickup] = useState(null);
   const [transportDrop, setTransportDrop] = useState(null);
   const [pickupTransportRef, setPickupTransportRef] = useState("");
+  const [dropTransportRef, setDropTransportRef] = useState("");
   const [showPickupTransportSuggestions, setShowPickupTransportSuggestions] =
     useState(false);
   const [showDropTransportSuggestions, setShowDropTransportSuggestions] =
@@ -122,6 +124,119 @@ export default function ReservationPage() {
   // Payment method state
   const [paymentMethod, setPaymentMethod] = useState("immediate");
   const [userCreditInfo, setUserCreditInfo] = useState(null);
+  const [showRestoredMessage, setShowRestoredMessage] = useState(false);
+
+  // Fonction pour sauvegarder les données du formulaire
+  const saveFormData = () => {
+    if (!isAuthenticated) {
+      const formData = {
+        tripType,
+        date,
+        hour,
+        pickupAddress,
+        dropAddress,
+        stopChecked,
+        stopAddress,
+        bagage,
+        transportPickup,
+        transportDrop,
+        pickupTransportRef,
+        dropTransportRef,
+        duration,
+        paymentMethod,
+        pickupLocation,
+        dropLocation,
+        stopLocation,
+      };
+
+      reservationStorage.saveReservationData(formData);
+    }
+  };
+
+  // Restaurer les données sauvegardées seulement si l'utilisateur vient de se connecter
+  useEffect(() => {
+    // Vérifier si l'utilisateur vient de se connecter (présence d'un paramètre URL ou flag)
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromLogin = urlParams.get("from_login") === "true";
+
+    // Ou vérifier s'il y a un flag dans sessionStorage (plus fiable)
+    const justLoggedIn =
+      sessionStorage.getItem("taxibiker_just_logged_in") === "true";
+
+    if ((fromLogin || justLoggedIn) && isAuthenticated) {
+      const savedData = reservationStorage.getReservationData();
+      if (savedData) {
+        console.log(
+          "Restauration des données de réservation après connexion:",
+          savedData
+        );
+
+        // Restaurer tous les champs du formulaire
+        setTripType(savedData.tripType || "classic");
+        setDate(savedData.date || new Date());
+        setHour(savedData.hour || "");
+        setPickupAddress(savedData.pickupAddress || "");
+        setDropAddress(savedData.dropAddress || "");
+        setStopChecked(savedData.stopChecked || false);
+        setStopAddress(savedData.stopAddress || "");
+        setBagage(savedData.bagage || false);
+        setTransportPickup(savedData.transportPickup || null);
+        setTransportDrop(savedData.transportDrop || null);
+        setPickupTransportRef(savedData.pickupTransportRef || "");
+        setDropTransportRef(savedData.dropTransportRef || "");
+        setDuration(savedData.duration || 2);
+        setPaymentMethod(savedData.paymentMethod || "immediate");
+
+        // Restaurer les coordonnées si disponibles
+        if (savedData.pickupLocation)
+          setPickupLocation(savedData.pickupLocation);
+        if (savedData.dropLocation) setDropLocation(savedData.dropLocation);
+        if (savedData.stopLocation) setStopLocation(savedData.stopLocation);
+
+        // Afficher un message à l'utilisateur
+        setShowRestoredMessage(true);
+        setTimeout(() => setShowRestoredMessage(false), 5000);
+      }
+
+      // Nettoyer le flag pour éviter la restauration lors des prochaines visites
+      sessionStorage.removeItem("taxibiker_just_logged_in");
+
+      // Nettoyer l'URL si nécessaire
+      if (fromLogin) {
+        window.history.replaceState({}, "", "/reservation");
+      }
+    } else if (isAuthenticated) {
+      // Si l'utilisateur est connecté mais ne vient pas de se connecter,
+      // nettoyer les anciennes données sauvegardées
+      reservationStorage.clearReservationData();
+    }
+  }, [isAuthenticated]);
+
+  // Sauvegarder automatiquement les données quand l'utilisateur modifie le formulaire
+  useEffect(() => {
+    if (!isAuthenticated && (pickupAddress || dropAddress || hour)) {
+      // Sauvegarder avec un délai pour éviter trop d'appels
+      const timeoutId = setTimeout(() => {
+        saveFormData();
+      }, 1000);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [
+    tripType,
+    date,
+    hour,
+    pickupAddress,
+    dropAddress,
+    stopChecked,
+    stopAddress,
+    bagage,
+    transportPickup,
+    transportDrop,
+    duration,
+    paymentMethod,
+    isAuthenticated,
+  ]);
 
   // Fetch user credit info on component mount
   React.useEffect(() => {
@@ -579,47 +694,53 @@ export default function ReservationPage() {
       tripType === "classic" &&
       pickupLocation &&
       dropLocation &&
-      window.google
+      isLoaded &&
+      window.google &&
+      window.google.maps
     ) {
-      const directionsService = new window.google.maps.DirectionsService();
+      try {
+        const directionsService = new window.google.maps.DirectionsService();
 
-      const waypoints = [];
-      if (stopLocation) {
-        waypoints.push({
-          location: stopLocation,
-          stopover: true,
-        });
-      }
-
-      directionsService.route(
-        {
-          origin: pickupLocation,
-          destination: dropLocation,
-          waypoints: waypoints,
-          travelMode: window.google.maps.TravelMode.DRIVING,
-          avoidHighways: false,
-          avoidTolls: false,
-        },
-        (result, status) => {
-          if (status === "OK") {
-            setDirections(result);
-            // Extract distance in kilometers
-            const distanceInMeters =
-              result.routes?.[0]?.legs?.[0]?.distance?.value;
-            if (distanceInMeters) {
-              const distanceInKm = distanceInMeters / 1000;
-              setRouteDistance(distanceInKm);
-            }
-            // Fit the map to the route bounds when available
-            const routeBounds = result.routes?.[0]?.bounds;
-            if (map && routeBounds) {
-              map.fitBounds(routeBounds);
-            }
-          } else {
-            console.error("Directions request failed due to " + status);
-          }
+        const waypoints = [];
+        if (stopLocation) {
+          waypoints.push({
+            location: stopLocation,
+            stopover: true,
+          });
         }
-      );
+
+        directionsService.route(
+          {
+            origin: pickupLocation,
+            destination: dropLocation,
+            waypoints: waypoints,
+            travelMode: window.google.maps.TravelMode.DRIVING,
+            avoidHighways: false,
+            avoidTolls: false,
+          },
+          (result, status) => {
+            if (status === "OK") {
+              setDirections(result);
+              // Extract distance in kilometers
+              const distanceInMeters =
+                result.routes?.[0]?.legs?.[0]?.distance?.value;
+              if (distanceInMeters) {
+                const distanceInKm = distanceInMeters / 1000;
+                setRouteDistance(distanceInKm);
+              }
+              // Fit the map to the route bounds when available
+              const routeBounds = result.routes?.[0]?.bounds;
+              if (map && routeBounds) {
+                map.fitBounds(routeBounds);
+              }
+            } else {
+              console.error("Directions request failed due to " + status);
+            }
+          }
+        );
+      } catch (error) {
+        console.error("Erreur lors de l'initialisation de Google Maps:", error);
+      }
     } else if (tripType === "time") {
       // For time-based trips, clear directions and center on pickup location
       setDirections(null);
@@ -841,8 +962,17 @@ export default function ReservationPage() {
       setStopLocation(null);
       setStopAddress("");
     }
-    calculateRoute();
-  }, [stopChecked, pickupLocation, dropLocation, stopLocation, tripType]);
+    if (isLoaded) {
+      calculateRoute();
+    }
+  }, [
+    stopChecked,
+    pickupLocation,
+    dropLocation,
+    stopLocation,
+    tripType,
+    isLoaded,
+  ]);
 
   // Fermer les suggestions quand on clique ailleurs
   React.useEffect(() => {
@@ -876,6 +1006,19 @@ export default function ReservationPage() {
         <h1 className="text-2xl md:text-3xl font-bold mb-6 text-center text-white">
           Réservez votre course
         </h1>
+
+        {/* Message de restauration des données */}
+        {showRestoredMessage && (
+          <div className="max-w-2xl mx-auto mb-6 bg-green-600/20 border border-green-500/50 rounded-lg p-4 text-center">
+            <p className="text-green-400 font-medium">
+              ✅ Vos informations de réservation ont été restaurées !
+            </p>
+            <p className="text-green-300 text-sm mt-1">
+              Vous pouvez continuer votre réservation là où vous vous étiez
+              arrêté.
+            </p>
+          </div>
+        )}
 
         {/* Trip Type Selection */}
         <div className="max-w-2xl mx-auto mb-6">
@@ -1434,6 +1577,10 @@ export default function ReservationPage() {
             onClick={async () => {
               // Vérifier si l'utilisateur est connecté
               if (!authService.isAuthenticated()) {
+                // Sauvegarder les données du formulaire avant la redirection
+                saveFormData();
+                // Sauvegarder l'URL de redirection après connexion
+                reservationStorage.saveRedirectUrl("/reservation");
                 navigate("/user/login");
                 return;
               }
@@ -1475,6 +1622,9 @@ export default function ReservationPage() {
                 const result = await response.json();
 
                 if (result.success) {
+                  // Nettoyer les données sauvegardées après succès
+                  reservationStorage.clearReservationData();
+
                   alert(
                     `✅ Réservation confirmée !\n\nNuméro: #${result.reservation.id}\nMontant: ${result.reservation.price}€\n\nVous recevrez un email de confirmation.`
                   );

@@ -125,14 +125,10 @@ export default function HomePage() {
         >
           <div className="relative z-10 text-center px-4 pb-32 md:pb-48">
             <h1 className="text-3xl md:text-5xl font-bold mb-6">
-           Service haut de gamme pour vos déplacements
+              Service haut de gamme pour vos déplacements
             </h1>
             <button
-              onClick={() =>
-                (window.location.href = isAuthenticated
-                  ? "/reservation"
-                  : "/user/login")
-              }
+              onClick={() => (window.location.href = "/reservation")}
               className="bg-[#DD5212] hover:bg-orange-600 transition py-3 px-6 rounded-lg font-semibold text-white text-lg"
             >
               Réserver votre course
@@ -146,7 +142,8 @@ export default function HomePage() {
             À chaque déplacement, un chauffeur expérimenté
           </h2>
           <p className="mb-12 text-gray-300">
-          Profitez d’un service optimisé, sûr et agréable à chaque trajet à travers Paris et l’Île-de-France.
+            Profitez d’un service optimisé, sûr et agréable à chaque trajet à
+            travers Paris et l’Île-de-France.
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div className="flex flex-col items-center">
@@ -189,24 +186,24 @@ export default function HomePage() {
               Qui sommes-nous ?
             </h2>
             <p className="text-gray-300 mb-4">
-              Bienvenue chez TaxiBikerParis, votre partenaire de transport privé à Paris et en Île-de-France.
-Nous mettons à votre disposition un service de transport fiable, rapide et confortable, pensé pour répondre à tous vos besoins de déplacement qu’il s’agisse d’un trajet professionnel, personnel ou touristique.
-
-Notre équipe de chauffeurs expérimentés et courtois s’engage à vous offrir une expérience de voyage sécurisée, agréable et ponctuelle. 
-
-Chez TaxiBikerParis, nous croyons que le transport ne se résume pas à un simple déplacement.
-C’est une véritable expérience de confiance, où sécurité, confort et sérénité sont au cœur de notre mission. 
+              Bienvenue chez TaxiBikerParis, votre partenaire de transport privé
+              à Paris et en Île-de-France. Nous mettons à votre disposition un
+              service de transport fiable, rapide et confortable, pensé pour
+              répondre à tous vos besoins de déplacement qu’il s’agisse d’un
+              trajet professionnel, personnel ou touristique. Notre équipe de
+              chauffeurs expérimentés et courtois s’engage à vous offrir une
+              expérience de voyage sécurisée, agréable et ponctuelle. Chez
+              TaxiBikerParis, nous croyons que le transport ne se résume pas à
+              un simple déplacement. C’est une véritable expérience de
+              confiance, où sécurité, confort et sérénité sont au cœur de notre
+              mission.
             </p>
             <p className="text-gray-300 mb-6">
               Notre mission est de rendre chaque trajet agréable, en alliant
               ponctualité, sécurité et confort.
             </p>
             <button
-              onClick={() =>
-                (window.location.href = isAuthenticated
-                  ? "/reservation"
-                  : "/user/login")
-              }
+              onClick={() => (window.location.href = "/reservation")}
               className="bg-[#DD5212] hover:bg-orange-600 transition py-3 px-6 rounded-lg font-semibold text-white text-lg"
             >
               Réserver votre course
