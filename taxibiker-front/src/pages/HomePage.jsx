@@ -241,25 +241,25 @@ export default function HomePage() {
           <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center text-white">
             Nos équipements pour votre confort et sécurité
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
             {equipments.map((item, index) => (
               <div
                 key={index}
-                className="group bg-gray-900/50 backdrop-blur-sm border border-gray-700/50 rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:border-orange-500/30 flex flex-col"
+                className="group bg-gray-900/50 backdrop-blur-sm border border-gray-700/50 rounded-xl md:rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:border-orange-500/30 flex flex-col"
               >
                 <div className="relative overflow-hidden flex-1">
                   <img
                     src={item.imageUrl}
                     alt={item.title}
-                    className="w-full h-full min-h-[280px] object-cover"
+                    className="w-full h-full min-h-[180px] md:min-h-[280px] object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </div>
-                <div className="p-4 space-y-2 flex-shrink-0">
-                  <h3 className="text-lg font-bold text-[#DD5212] group-hover:text-orange-400 transition-colors duration-300">
+                <div className="p-2 md:p-4 space-y-1 md:space-y-2 flex-shrink-0">
+                  <h3 className="text-sm md:text-lg font-bold text-[#DD5212] group-hover:text-orange-400 transition-colors duration-300">
                     {item.title}
                   </h3>
-                  <p className="text-gray-300 text-xs leading-relaxed group-hover:text-white transition-colors duration-300">
+                  <p className="text-gray-300 text-xs leading-relaxed group-hover:text-white transition-colors duration-300 hidden sm:block">
                     {item.description}
                   </p>
                 </div>
