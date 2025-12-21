@@ -399,18 +399,7 @@ export default function ReservationPage() {
   };
 
   // Transport suggestions data
-  const airports = [
-    "Aéroport Charles de Gaulle (CDG)",
-    "Aéroport Orly (ORY)",
-    "Aéroport de Nice (NCE)",
-    "Aéroport de Lyon (LYS)",
-    "Aéroport de Marseille (MRS)",
-    "Aéroport de Toulouse (TLS)",
-    "Aéroport de Bordeaux (BOD)",
-    "Aéroport de Nantes (NTE)",
-    "Aéroport de Strasbourg (SXB)",
-    "Aéroport de Montpellier (MPL)",
-  ];
+  const airports = ["Aéroport Charles de Gaulle (CDG)", "Aéroport Orly (ORY)"];
 
   const trainStations = [
     "Gare du Nord",
