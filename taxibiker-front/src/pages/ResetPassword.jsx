@@ -8,7 +8,7 @@ import {
   FaEyeSlash,
 } from "react-icons/fa";
 import Header from "../components/Header";
-import { buildApiUrl } from "../config/api";
+import { API_BASE_URL } from "../config/api";
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -38,7 +38,7 @@ const ResetPassword = () => {
 
   const verifyToken = async () => {
     try {
-      const response = await fetch(buildApiUrl("reset-password/verify"), {
+      const response = await fetch(`${API_BASE_URL}/reset-password/verify`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -94,7 +94,7 @@ const ResetPassword = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(buildApiUrl("reset-password"), {
+      const response = await fetch(`${API_BASE_URL}/reset-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
