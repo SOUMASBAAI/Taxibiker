@@ -7,6 +7,7 @@ import {
   FaExclamationTriangle,
 } from "react-icons/fa";
 import Header from "../components/Header";
+import { buildApiUrl } from "../config/api";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -22,18 +23,13 @@ const ForgotPassword = () => {
     setMessage("");
 
     try {
-      const response = await fetch(
-        `${
-          import.meta.env.VITE_API_URL || "http://localhost:8000"
-        }/api/forgot-password`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email }),
-        }
-      );
+      const response = await fetch(buildApiUrl("forgot-password"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
 
       const data = await response.json();
 

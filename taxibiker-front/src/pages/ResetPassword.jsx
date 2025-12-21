@@ -8,6 +8,7 @@ import {
   FaEyeSlash,
 } from "react-icons/fa";
 import Header from "../components/Header";
+import { buildApiUrl } from "../config/api";
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -37,18 +38,13 @@ const ResetPassword = () => {
 
   const verifyToken = async () => {
     try {
-      const response = await fetch(
-        `${
-          import.meta.env.VITE_API_URL || "http://localhost:8000"
-        }/api/reset-password/verify`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ token }),
-        }
-      );
+      const response = await fetch(buildApiUrl("reset-password/verify"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token }),
+      });
 
       const data = await response.json();
 
@@ -98,18 +94,13 @@ const ResetPassword = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(
-        `${
-          import.meta.env.VITE_API_URL || "http://localhost:8000"
-        }/api/reset-password`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ token, password }),
-        }
-      );
+      const response = await fetch(buildApiUrl("reset-password"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token, password }),
+      });
 
       const data = await response.json();
 
