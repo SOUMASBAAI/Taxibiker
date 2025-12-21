@@ -10,6 +10,8 @@ import AdminDashboard from "./pages/AdminDashboard.jsx";
 import AdminClients from "./pages/AdminClients.jsx";
 import AdminReservations from "./pages/AdminReservations.jsx";
 import ReservationPage from "./pages/ReservationPage.jsx";
+import ForgotPassword from "./pages/ForgotPassword.jsx";
+import ResetPassword from "./pages/ResetPassword.jsx";
 
 function App() {
   return (
@@ -18,6 +20,7 @@ function App() {
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/register" element={<Register />} />
       <Route path="/user/login" element={<UserLogin />} />
+      <Route path="/login" element={<UserLogin />} />
       <Route path="/contact" element={<ContactForm />} />
       <Route path="/home" element={<HomePage />} />
       <Route path="/dashboard" element={<UserDashboard />} />
@@ -26,6 +29,8 @@ function App() {
       <Route path="/admin/clients" element={<AdminClients />} />
       <Route path="/admin/reservations" element={<AdminReservations />} />
       <Route path="/reservation" element={<ReservationPage />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
     </Routes>
   );
 }

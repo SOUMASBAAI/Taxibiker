@@ -11,12 +11,14 @@ class WhatsAppService
     private string $twilioWhatsAppNumber;
     private LoggerInterface $logger;
     private bool $isEnabled;
+    private bool $useTemplates;
 
     public function __construct(
         ?string $twilioAccountSid,
         ?string $twilioAuthToken,
         ?string $twilioWhatsAppNumber,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        ?string $appEnv = 'dev'
     ) {
         // Initialiser le logger en premier
         $this->logger = $logger;
@@ -24,9 +26,15 @@ class WhatsAppService
         // Vérifier si les credentials Twilio sont configurés
         $this->isEnabled = !empty($twilioAccountSid) && !empty($twilioAuthToken) && !empty($twilioWhatsAppNumber);
         
+        // Déterminer si on utilise les templates (production) ou messages libres (sandbox/dev)
+        $this->useTemplates = $appEnv === 'prod' && !str_contains($twilioWhatsAppNumber ?? '', '+14155238886');
+        
         if ($this->isEnabled) {
             $this->twilioClient = new Client($twilioAccountSid, $twilioAuthToken);
             $this->twilioWhatsAppNumber = $twilioWhatsAppNumber;
+            
+            $mode = $this->useTemplates ? 'templates (production)' : 'messages libres (sandbox/dev)';
+            $this->logger->info("WhatsApp Service activé en mode: $mode");
         } else {
             $this->twilioClient = null;
             $this->twilioWhatsAppNumber = '';
@@ -81,12 +89,75 @@ class WhatsAppService
     }
 
     /**
+     * Envoie un message template WhatsApp (pour production)
+     */
+    public function sendTemplateMessage(string $to, string $templateName, array $parameters): bool
+    {
+        if (!$this->isEnabled) {
+            $this->logger->info('WhatsApp désactivé - Template simulé', [
+                'to' => $to,
+                'template' => $templateName,
+                'parameters' => $parameters
+            ]);
+            return true;
+        }
+
+        try {
+            $formattedNumber = $this->formatPhoneNumber($to);
+            
+            $this->logger->info('Envoi template WhatsApp', [
+                'to' => $formattedNumber,
+                'template' => $templateName,
+                'parameters' => $parameters
+            ]);
+
+            $message = $this->twilioClient->messages->create(
+                "whatsapp:$formattedNumber",
+                [
+                    'from' => "whatsapp:$this->twilioWhatsAppNumber",
+                    'contentSid' => $templateName,
+                    'contentVariables' => json_encode($parameters)
+                ]
+            );
+
+            $this->logger->info('Template WhatsApp envoyé avec succès', [
+                'sid' => $message->sid,
+                'to' => $formattedNumber,
+                'template' => $templateName
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur envoi template WhatsApp', [
+                'error' => $e->getMessage(),
+                'to' => $to,
+                'template' => $templateName
+            ]);
+            return false;
+        }
+    }
+
+    /**
      * Envoie une notification de nouvelle réservation au client
      */
     public function sendReservationConfirmation(string $phoneNumber, array $reservationData): bool
     {
-        $message = $this->buildReservationConfirmationMessage($reservationData);
-        return $this->sendMessage($phoneNumber, $message);
+        if ($this->useTemplates) {
+            // Mode production avec templates
+            $parameters = [
+                '1' => $reservationData['firstname'],
+                '2' => $reservationData['date'],
+                '3' => $reservationData['time'],
+                '4' => $reservationData['from'],
+                '5' => $reservationData['to'] ?? $reservationData['from'],
+                '6' => (string)$reservationData['price']
+            ];
+            return $this->sendTemplateMessage($phoneNumber, 'reservation_confirmation', $parameters);
+        } else {
+            // Mode sandbox/dev avec messages libres
+            $message = $this->buildReservationConfirmationMessage($reservationData);
+            return $this->sendMessage($phoneNumber, $message);
+        }
     }
 
     /**
@@ -94,6 +165,32 @@ class WhatsAppService
      */
     public function sendStatusUpdate(string $phoneNumber, array $reservationData, string $newStatus): bool
     {
+        if ($this->useTemplates) {
+            // Mode production avec templates
+            $templateName = match($newStatus) {
+                'Acceptée' => 'reservation_accepted',
+                'Refusée' => 'reservation_cancelled',
+                default => null
+            };
+            
+            if ($templateName) {
+                $parameters = [
+                    '1' => $reservationData['firstname'],
+                    '2' => $reservationData['date'],
+                    '3' => $reservationData['time']
+                ];
+                
+                if ($templateName === 'reservation_accepted') {
+                    $parameters['4'] = $reservationData['from'];
+                    $parameters['5'] = $reservationData['to'];
+                    $parameters['6'] = (string)$reservationData['price'];
+                }
+                
+                return $this->sendTemplateMessage($phoneNumber, $templateName, $parameters);
+            }
+        }
+        
+        // Fallback vers message libre pour sandbox/dev ou statuts non mappés
         $message = $this->buildStatusUpdateMessage($reservationData, $newStatus);
         return $this->sendMessage($phoneNumber, $message);
     }
@@ -103,8 +200,25 @@ class WhatsAppService
      */
     public function sendAdminNotification(string $adminPhoneNumber, array $reservationData): bool
     {
-        $message = $this->buildAdminNotificationMessage($reservationData);
-        return $this->sendMessage($adminPhoneNumber, $message);
+        if ($this->useTemplates) {
+            // Mode production avec templates
+            $parameters = [
+                '1' => $reservationData['firstname'],
+                '2' => $reservationData['lastname'],
+                '3' => $reservationData['phone'],
+                '4' => $reservationData['email'],
+                '5' => $reservationData['date'],
+                '6' => $reservationData['time'],
+                '7' => $reservationData['from'],
+                '8' => $reservationData['to'] ?? $reservationData['from'],
+                '9' => (string)$reservationData['price']
+            ];
+            return $this->sendTemplateMessage($adminPhoneNumber, 'admin_new_reservation', $parameters);
+        } else {
+            // Mode sandbox/dev avec messages libres
+            $message = $this->buildAdminNotificationMessage($reservationData);
+            return $this->sendMessage($adminPhoneNumber, $message);
+        }
     }
 
     /**

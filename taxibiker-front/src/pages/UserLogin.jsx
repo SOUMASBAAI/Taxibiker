@@ -160,12 +160,12 @@ export default function UserLogin() {
           {/* Footer Links */}
           <div className="mt-8 space-y-4">
             <div className="text-center">
-              <a
-                href="#"
+              <Link
+                to="/forgot-password"
                 className="text-orange-400 text-sm hover:text-orange-300 transition-colors duration-200 font-medium"
               >
                 Mot de passe oublié ?
-              </a>
+              </Link>
             </div>
             <div className="text-center">
               <p className="text-gray-400 text-sm">

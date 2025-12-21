@@ -3,7 +3,10 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Entity\PasswordResetToken;
 use App\Repository\UserRepository;
+use App\Repository\PasswordResetTokenRepository;
+use App\Service\EmailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -21,7 +24,9 @@ class AuthController extends AbstractController
         private EntityManagerInterface $entityManager,
         private UserPasswordHasherInterface $passwordHasher,
         private JWTTokenManagerInterface $jwtManager,
-        private UserRepository $userRepository
+        private UserRepository $userRepository,
+        private PasswordResetTokenRepository $passwordResetTokenRepository,
+        private EmailService $emailService
     ) {
     }
 
@@ -150,6 +155,167 @@ class AuthController extends AbstractController
             'phone' => $user->getPhoneNumber(),
             'roles' => $user->getRoles()
         ]);
+    }
+
+    /**
+     * Demande de réinitialisation de mot de passe
+     */
+    #[Route('/forgot-password', name: 'forgot_password', methods: ['POST'])]
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        if (!isset($data['email'])) {
+            return $this->json(['error' => 'Email requis'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Validation de l'email
+        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            return $this->json(['error' => 'Email invalide'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $user = $this->userRepository->findOneBy(['email' => $data['email']]);
+
+        // Toujours retourner succès pour éviter l'énumération d'emails
+        if (!$user) {
+            return $this->json([
+                'message' => 'Si cet email existe dans notre système, vous recevrez un lien de réinitialisation.'
+            ]);
+        }
+
+        try {
+            // Supprimer les anciens tokens de cet utilisateur
+            $this->passwordResetTokenRepository->deleteUserTokens($user);
+
+            // Vérifier le nombre de tentatives récentes (protection anti-spam)
+            $activeTokensCount = $this->passwordResetTokenRepository->countActiveTokensForUser($user);
+            if ($activeTokensCount >= 3) {
+                return $this->json([
+                    'error' => 'Trop de demandes de réinitialisation. Veuillez patienter avant de réessayer.'
+                ], Response::HTTP_TOO_MANY_REQUESTS);
+            }
+
+            // Créer un nouveau token
+            $resetToken = new PasswordResetToken();
+            $resetToken->setUser($user);
+
+            $this->entityManager->persist($resetToken);
+            $this->entityManager->flush();
+
+            // Envoyer l'email
+            try {
+                $emailSent = $this->emailService->sendPasswordResetEmail(
+                    $user->getEmail(),
+                    $user->getFirstName(),
+                    $resetToken->getToken()
+                );
+
+                if (!$emailSent) {
+                    // Log l'erreur mais continue le processus pour des raisons de sécurité
+                    error_log('Failed to send password reset email to: ' . $user->getEmail());
+                }
+            } catch (\Exception $emailException) {
+                // Log l'erreur mais continue le processus pour des raisons de sécurité
+                error_log('Exception while sending password reset email: ' . $emailException->getMessage());
+            }
+
+            return $this->json([
+                'message' => 'Si cet email existe dans notre système, vous recevrez un lien de réinitialisation.'
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json([
+                'error' => 'Erreur lors de la demande de réinitialisation: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Vérification de la validité d'un token de réinitialisation
+     */
+    #[Route('/reset-password/verify', name: 'verify_reset_token', methods: ['POST'])]
+    public function verifyResetToken(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        if (!isset($data['token'])) {
+            return $this->json(['error' => 'Token requis'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $resetToken = $this->passwordResetTokenRepository->findValidToken($data['token']);
+
+        if (!$resetToken) {
+            return $this->json([
+                'error' => 'Token invalide ou expiré'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        return $this->json([
+            'valid' => true,
+            'user' => [
+                'email' => $resetToken->getUser()->getEmail(),
+                'firstname' => $resetToken->getUser()->getFirstName()
+            ]
+        ]);
+    }
+
+    /**
+     * Réinitialisation effective du mot de passe
+     */
+    #[Route('/reset-password', name: 'reset_password', methods: ['POST'])]
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        if (!isset($data['token'], $data['password'])) {
+            return $this->json(['error' => 'Token et nouveau mot de passe requis'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Validation du mot de passe (même règles que l'inscription)
+        if (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{12,}$/', $data['password'])) {
+            return $this->json([
+                'error' => 'Mot de passe invalide : min. 12 caractères, majuscule, minuscule, chiffre et caractère spécial.'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $resetToken = $this->passwordResetTokenRepository->findValidToken($data['token']);
+
+        if (!$resetToken) {
+            return $this->json([
+                'error' => 'Token invalide ou expiré'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        try {
+            $user = $resetToken->getUser();
+
+            // Hasher le nouveau mot de passe
+            $hashedPassword = $this->passwordHasher->hashPassword($user, $data['password']);
+            $user->setPassword($hashedPassword);
+
+            // Marquer le token comme utilisé
+            $resetToken->markAsUsed();
+
+            $this->entityManager->flush();
+
+            // Envoyer email de confirmation
+            $this->emailService->sendPasswordChangedConfirmation(
+                $user->getEmail(),
+                $user->getFirstName()
+            );
+
+            // Nettoyer les tokens expirés
+            $this->passwordResetTokenRepository->cleanupExpiredTokens();
+
+            return $this->json([
+                'message' => 'Mot de passe modifié avec succès'
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json([
+                'error' => 'Erreur lors de la réinitialisation: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }
 

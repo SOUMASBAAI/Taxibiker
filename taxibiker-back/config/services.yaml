@@ -10,6 +10,10 @@ parameters:
     admin.whatsapp_number: "%env(default:twilio_default:ADMIN_WHATSAPP_NUMBER)%"
     twilio_default: null
 
+    # Configuration email par défaut pour développement
+    mailer.dsn: "%env(default:mailer_default:MAILER_DSN)%"
+    mailer_default: "smtp://contact%40taxibikerparis.com:Taxibiker!123@mail.taxibikerparis.com:587"
+
 services:
     # default configuration for services in *this* file
     _defaults:
@@ -30,3 +34,11 @@ services:
             $twilioAccountSid: "%twilio.account_sid%"
             $twilioAuthToken: "%twilio.auth_token%"
             $twilioWhatsAppNumber: "%twilio.whatsapp_number%"
+            $appEnv: "%kernel.environment%"
+
+    # Email Service Configuration
+    App\Service\EmailService:
+        arguments:
+            $mailer: "@mailer"
+            $twig: "@twig"
+            $logger: "@logger"

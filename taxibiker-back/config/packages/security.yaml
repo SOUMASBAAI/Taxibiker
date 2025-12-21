@@ -33,6 +33,8 @@ security:
     access_control:
         - { path: ^/api/register, roles: PUBLIC_ACCESS }
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
+        - { path: ^/api/forgot-password, roles: PUBLIC_ACCESS }
+        - { path: ^/api/reset-password, roles: PUBLIC_ACCESS }
         - { path: ^/api/pricing, roles: PUBLIC_ACCESS }
         - { path: ^/api/me, roles: ROLE_USER }
         - { path: ^/api/user/credit/reset, roles: PUBLIC_ACCESS } # Temporaire pour les tests admin
