@@ -245,18 +245,23 @@ export default function HomePage() {
             {equipments.map((item, index) => (
               <div
                 key={index}
-                className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-lg overflow-hidden transform transition duration-300 hover:scale-105 hover:shadow-2xl"
+                className="group bg-gray-900/50 backdrop-blur-sm border border-gray-700/50 rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:border-orange-500/30 flex flex-col"
               >
-                <img
-                  src={item.imageUrl}
-                  alt={item.title}
-                  className="w-full h-48 object-cover rounded-t-3xl"
-                />
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold text-[#DD5212] mb-2">
+                <div className="relative overflow-hidden flex-1">
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="w-full h-full min-h-[280px] object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </div>
+                <div className="p-4 space-y-2 flex-shrink-0">
+                  <h3 className="text-lg font-bold text-[#DD5212] group-hover:text-orange-400 transition-colors duration-300">
                     {item.title}
                   </h3>
-                  <p className="text-white text-sm">{item.description}</p>
+                  <p className="text-gray-300 text-xs leading-relaxed group-hover:text-white transition-colors duration-300">
+                    {item.description}
+                  </p>
                 </div>
               </div>
             ))}
