@@ -7,7 +7,7 @@
 **Language:** French (fr)
 
 ```
-🚕 *TAXIBIKER - Confirmation de réservation*
+🏍️ *TAXIBIKER - Confirmation de réservation*
 
 Bonjour {{1}},
 
@@ -32,7 +32,7 @@ Merci de votre confiance ! 🙏
 **Language:** French (fr)
 
 ```
-🚕 *TAXIBIKER - Mise à jour*
+🏍️ *TAXIBIKER - Mise à jour*
 
 Bonjour {{1}},
 
@@ -42,7 +42,7 @@ Votre réservation du {{2}} à {{3}} a été *confirmée* !
 📍 {{4}} → {{5}}
 💰 Prix : {{6}}€
 
-Nous serons là à l'heure ! 🚕
+Nous serons là à l'heure ! 🏍️
 ```
 
 ## Template 3: Reservation Cancelled
@@ -52,7 +52,7 @@ Nous serons là à l'heure ! 🚕
 **Language:** French (fr)
 
 ```
-🚕 *TAXIBIKER - Mise à jour*
+🏍️ *TAXIBIKER - Mise à jour*
 
 Bonjour {{1}},
 
@@ -142,4 +142,3 @@ N'hésitez pas à faire une nouvelle demande pour d'autres créneaux. 🙏
 - Website with privacy policy
 - Business phone number verification
 - Facebook Business Manager account
-
