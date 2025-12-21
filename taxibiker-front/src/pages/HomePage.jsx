@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "../components/Header";
 import DashboardHeader from "../components/user/DashboardHeader";
 import Footer from "../components/Footer";
@@ -30,6 +30,21 @@ export default function HomePage() {
 
   // Vérifier si l'utilisateur est connecté
   const isAuthenticated = authService.isAuthenticated();
+
+  // Handle hash navigation (when coming from another page with #contact)
+  useEffect(() => {
+    if (window.location.hash === "#contact") {
+      setTimeout(() => {
+        const contactSection = document.getElementById("contact");
+        if (contactSection) {
+          contactSection.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
+      }, 100); // Small delay to ensure page is loaded
+    }
+  }, []);
 
   // Fonction de navigation pour le DashboardHeader
   const handleNavigation = (page) => {
@@ -249,7 +264,7 @@ export default function HomePage() {
         </section>
 
         {/* Formulaire de contact */}
-        <section className="py-16 px-4 max-w-6xl mx-auto">
+        <section id="contact" className="py-16 px-4 max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-4 text-white">
             Contactez TaxiBiker
           </h2>

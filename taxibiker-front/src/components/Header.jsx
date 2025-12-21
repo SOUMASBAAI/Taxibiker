@@ -4,6 +4,28 @@ import { FaBars, FaTimes, FaMotorcycle, FaUser } from "react-icons/fa";
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
 
+  const handleContactClick = (e) => {
+    e.preventDefault();
+
+    // Check if we're already on the homepage
+    if (window.location.pathname === "/") {
+      // Scroll to contact section
+      const contactSection = document.getElementById("contact");
+      if (contactSection) {
+        contactSection.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    } else {
+      // Navigate to homepage with hash
+      window.location.href = "/#contact";
+    }
+
+    // Close mobile menu if open
+    setIsOpen(false);
+  };
+
   const navigationItems = [
     {
       id: "home",
@@ -13,7 +35,8 @@ export default function Header() {
     {
       id: "contact",
       label: "Contact",
-      href: "/contact",
+      href: "#contact",
+      onClick: handleContactClick,
     },
   ];
 
@@ -46,6 +69,7 @@ export default function Header() {
                   <a
                     key={item.id}
                     href={item.href}
+                    onClick={item.onClick}
                     className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200"
                   >
                     {item.label}
@@ -127,8 +151,8 @@ export default function Header() {
               <a
                 key={item.id}
                 href={item.href}
+                onClick={item.onClick || (() => setIsOpen(false))}
                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 font-medium transition-all"
-                onClick={() => setIsOpen(false)}
               >
                 {item.label}
               </a>
