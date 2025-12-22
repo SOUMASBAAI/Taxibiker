@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import DashboardHeader from "../components/user/DashboardHeader";
 import authService from "../services/authService";
 import WhatsappButton from "../components/WhatsappButton";
+import { buildApiUrl } from "../config/api.js";
 import {
   FaUser,
   FaEnvelope,
@@ -88,7 +89,7 @@ export default function UserSettings() {
 
     try {
       const response = await authService.authenticatedRequest(
-        "http://localhost:8000/api/user/update",
+        buildApiUrl("user/update"),
         {
           method: "PATCH",
           body: JSON.stringify(userInfo),
@@ -138,7 +139,7 @@ export default function UserSettings() {
 
     try {
       const response = await authService.authenticatedRequest(
-        "http://localhost:8000/api/user/change-password",
+        buildApiUrl("user/change-password"),
         {
           method: "PATCH",
           body: JSON.stringify({

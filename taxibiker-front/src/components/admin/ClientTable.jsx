@@ -13,6 +13,7 @@ import {
 import AddClientModal from "./AddClientModal";
 import RegularizeCreditModal from "./RegularizeCreditModal";
 import ClientCreditHistoryModal from "./ClientCreditHistoryModal";
+import { buildApiUrl } from "../../config/api.js";
 
 export default function ClientTable({
   clients,
@@ -28,16 +29,13 @@ export default function ClientTable({
 
   const handleRegularizeCredit = async (clientId) => {
     try {
-      const response = await fetch(
-        "http://localhost:8000/api/user/credit/reset",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ user_id: clientId }),
-        }
-      );
+      const response = await fetch(buildApiUrl("user/credit/reset"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ user_id: clientId }),
+      });
 
       const result = await response.json();
 

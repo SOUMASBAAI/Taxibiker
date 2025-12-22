@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import AdminHeader from "../components/admin/AdminHeader";
 import ClientTable from "../components/admin/ClientTable";
 import EditClientModal from "../components/admin/EditClientModal";
+import { buildApiUrl } from "../config/api.js";
 
 export default function AdminClients() {
   const [clients, setClients] = useState([]);
@@ -19,7 +20,7 @@ export default function AdminClients() {
   const fetchClients = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("http://localhost:8000/api/admin/clients");
+      const response = await fetch(buildApiUrl("admin/clients"));
       const result = await response.json();
 
       if (result.success) {
@@ -45,7 +46,7 @@ export default function AdminClients() {
   // Ajouter un client
   const handleAddClient = async (newClientData) => {
     try {
-      const response = await fetch("http://localhost:8000/api/admin/clients", {
+      const response = await fetch(buildApiUrl("admin/clients"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -74,7 +75,7 @@ export default function AdminClients() {
   const handleEditClient = async (updatedClientData) => {
     try {
       const response = await fetch(
-        `http://localhost:8000/api/admin/clients/${editingClient.id}`,
+        buildApiUrl(`admin/clients/${editingClient.id}`),
         {
           method: "PATCH",
           headers: {
@@ -114,12 +115,9 @@ export default function AdminClients() {
     }
 
     try {
-      const response = await fetch(
-        `http://localhost:8000/api/admin/clients/${id}`,
-        {
-          method: "DELETE",
-        }
-      );
+      const response = await fetch(buildApiUrl(`admin/clients/${id}`), {
+        method: "DELETE",
+      });
 
       const result = await response.json();
 

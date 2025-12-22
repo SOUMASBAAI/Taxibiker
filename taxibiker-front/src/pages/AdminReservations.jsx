@@ -3,6 +3,7 @@ import AdminHeader from "../components/admin/AdminHeader";
 import ReservationCard from "../components/admin/ReservationCard";
 import ReservationModal from "../components/admin/ReservationModal";
 import authService from "../services/authService";
+import { buildApiUrl } from "../config/api.js";
 
 export default function AdminReservations() {
   const [reservations, setReservations] = useState([]);
@@ -15,9 +16,7 @@ export default function AdminReservations() {
       try {
         // Pour le moment, on fait une requête non-authentifiée
         // TODO: Utiliser authService.authenticatedRequest quand l'auth admin sera prête
-        const response = await fetch(
-          "http://localhost:8000/api/admin/reservations"
-        );
+        const response = await fetch(buildApiUrl("admin/reservations"));
         const data = await response.json();
 
         if (data.success) {
@@ -81,7 +80,7 @@ export default function AdminReservations() {
     try {
       // Appeler l'API pour mettre à jour le statut dans la base de données
       const response = await fetch(
-        `http://localhost:8000/api/admin/reservations/${id}/status`,
+        buildApiUrl(`admin/reservations/${id}/status`),
         {
           method: "PATCH",
           headers: {

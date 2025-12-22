@@ -10,6 +10,7 @@ import {
   FaUser,
 } from "react-icons/fa";
 import AdminMonthlyDetailModal from "./AdminMonthlyDetailModal";
+import { buildApiUrl } from "../../config/api.js";
 
 export default function ClientCreditHistoryModal({ client, isOpen, onClose }) {
   const [monthlySummary, setMonthlySummary] = useState([]);
@@ -31,7 +32,7 @@ export default function ClientCreditHistoryModal({ client, isOpen, onClose }) {
       setError(null);
 
       const response = await fetch(
-        `http://localhost:8000/api/user/credit/${client.id}/history`
+        buildApiUrl(`user/credit/${client.id}/history`)
       );
       const data = await response.json();
 

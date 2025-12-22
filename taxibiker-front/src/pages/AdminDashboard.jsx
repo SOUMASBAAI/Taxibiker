@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { buildApiUrl } from "../config/api.js";
 import {
   FaCalendarAlt,
   FaUsers,
@@ -1063,9 +1064,7 @@ export default function AdminDashboard() {
       try {
         // Pour le moment, on fait une requête non-authentifiée
         // TODO: Utiliser authService.authenticatedRequest quand l'auth admin sera prête
-        const response = await fetch(
-          "http://localhost:8000/api/admin/reservations"
-        );
+        const response = await fetch(buildApiUrl("admin/reservations"));
         const data = await response.json();
 
         if (data.success) {
@@ -1137,7 +1136,7 @@ export default function AdminDashboard() {
     try {
       // Appeler l'API pour mettre à jour le statut dans la base de données
       const response = await fetch(
-        `http://localhost:8000/api/admin/reservations/${id}/status`,
+        buildApiUrl(`admin/reservations/${id}/status`),
         {
           method: "PATCH",
           headers: {

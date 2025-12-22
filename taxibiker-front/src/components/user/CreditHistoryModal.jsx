@@ -10,6 +10,7 @@ import {
 } from "react-icons/fa";
 import authService from "../../services/authService";
 import MonthlyDetailModal from "./MonthlyDetailModal";
+import { buildApiUrl } from "../../config/api.js";
 
 export default function CreditHistoryModal({ isOpen, onClose }) {
   const [monthlySummary, setMonthlySummary] = useState([]);
@@ -31,7 +32,7 @@ export default function CreditHistoryModal({ isOpen, onClose }) {
       setError(null);
 
       const response = await authService.authenticatedRequest(
-        "http://localhost:8000/api/user/credit/history"
+        buildApiUrl("user/credit/history")
       );
       const data = await response.json();
 

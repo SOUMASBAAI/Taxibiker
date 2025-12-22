@@ -308,18 +308,13 @@ export default function ReservationPage() {
       // Add excess baggage if checked
       requestData.excessBaggage = bagage ? 1 : 0;
 
-      const response = await fetch(
-        `${
-          import.meta.env.PROD ? "/api" : "http://localhost:8000/api"
-        }/pricing/calculate`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(requestData),
-        }
-      );
+      const response = await fetch(buildApiUrl("pricing/calculate"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestData),
+      });
 
       const result = await response.json();
 
