@@ -13,11 +13,15 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class ContactController extends AbstractController
 {
-    #[Route('/api/contact', name: 'api_contact', methods: ['POST'])]
+    #[Route('/api/contact', name: 'api_contact', methods: ['POST', 'OPTIONS'])]
     public function sendContactMessage(
         Request $request,
         EmailService $emailService
     ): JsonResponse {
+        // Répondre immédiatement au préflight CORS
+        if ($request->getMethod() === 'OPTIONS') {
+            return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+        }
         $data = json_decode($request->getContent(), true) ?? [];
 
         $firstname = trim($data['firstname'] ?? '');
