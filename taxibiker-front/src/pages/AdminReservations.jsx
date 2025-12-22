@@ -45,11 +45,17 @@ export default function AdminReservations() {
   };
 
   useEffect(() => {
+    const user = authService.getUser();
+    if (!user || !user.roles?.includes("ROLE_ADMIN")) {
+      window.location.href = "/admin/login";
+      return;
+    }
+
     const fetchReservations = async () => {
       try {
-        // Pour le moment, on fait une requête non-authentifiée
-        // TODO: Utiliser authService.authenticatedRequest quand l'auth admin sera prête
-        const response = await fetch(buildApiUrl("admin/reservations"));
+        const response = await authService.authenticatedRequest(
+          buildApiUrl("admin/reservations")
+        );
         const data = await response.json();
 
         if (data.success) {
@@ -103,7 +109,7 @@ export default function AdminReservations() {
   const handleStatusChange = async (id, newStatus, type) => {
     try {
       // Appeler l'API pour mettre à jour le statut dans la base de données
-      const response = await fetch(
+      const response = await authService.authenticatedRequest(
         buildApiUrl(`admin/reservations/${id}/status`),
         {
           method: "PATCH",

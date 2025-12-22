@@ -3,6 +3,7 @@ import AdminHeader from "../components/admin/AdminHeader";
 import ClientTable from "../components/admin/ClientTable";
 import EditClientModal from "../components/admin/EditClientModal";
 import { buildApiUrl } from "../config/api.js";
+import authService from "../services/authService";
 
 export default function AdminClients() {
   const [clients, setClients] = useState([]);
@@ -20,7 +21,9 @@ export default function AdminClients() {
   const fetchClients = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(buildApiUrl("admin/clients"));
+      const response = await authService.authenticatedRequest(
+        buildApiUrl("admin/clients")
+      );
       const result = await response.json();
 
       if (result.success) {
@@ -46,13 +49,16 @@ export default function AdminClients() {
   // Ajouter un client
   const handleAddClient = async (newClientData) => {
     try {
-      const response = await fetch(buildApiUrl("admin/clients"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newClientData),
-      });
+      const response = await authService.authenticatedRequest(
+        buildApiUrl("admin/clients"),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newClientData),
+        }
+      );
 
       const result = await response.json();
 
@@ -74,7 +80,7 @@ export default function AdminClients() {
   // Modifier un client
   const handleEditClient = async (updatedClientData) => {
     try {
-      const response = await fetch(
+      const response = await authService.authenticatedRequest(
         buildApiUrl(`admin/clients/${editingClient.id}`),
         {
           method: "PATCH",
@@ -115,9 +121,12 @@ export default function AdminClients() {
     }
 
     try {
-      const response = await fetch(buildApiUrl(`admin/clients/${id}`), {
-        method: "DELETE",
-      });
+      const response = await authService.authenticatedRequest(
+        buildApiUrl(`admin/clients/${id}`),
+        {
+          method: "DELETE",
+        }
+      );
 
       const result = await response.json();
 

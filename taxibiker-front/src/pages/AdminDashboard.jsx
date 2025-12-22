@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { buildApiUrl } from "../config/api.js";
+import authService from "../services/authService";
 import {
   FaCalendarAlt,
   FaUsers,
@@ -1057,6 +1058,7 @@ export default function AdminDashboard() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
 
   const mapApiStatusToUi = (apiStatus) => {
     switch (apiStatus) {
@@ -1093,11 +1095,18 @@ export default function AdminDashboard() {
 
   // Fetch real reservations from API
   useEffect(() => {
+    const user = authService.getUser();
+    if (!user || !user.roles?.includes("ROLE_ADMIN")) {
+      window.location.href = "/admin/login";
+      return;
+    }
+    setAuthChecked(true);
+
     const fetchReservations = async () => {
       try {
-        // Pour le moment, on fait une requête non-authentifiée
-        // TODO: Utiliser authService.authenticatedRequest quand l'auth admin sera prête
-        const response = await fetch(buildApiUrl("admin/reservations"));
+        const response = await authService.authenticatedRequest(
+          buildApiUrl("admin/reservations")
+        );
         const data = await response.json();
 
         if (data.success) {
@@ -1159,7 +1168,7 @@ export default function AdminDashboard() {
   const handleStatusChange = async (id, newStatus, type) => {
     try {
       // Appeler l'API pour mettre à jour le statut dans la base de données
-      const response = await fetch(
+      const response = await authService.authenticatedRequest(
         buildApiUrl(`admin/reservations/${id}/status`),
         {
           method: "PATCH",

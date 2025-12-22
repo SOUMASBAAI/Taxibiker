@@ -1,10 +1,13 @@
 import { useState } from "react";
 import Footer from "../components/../Footer"; // 👈 j'importe ton footer
+import authService from "../../services/authService";
+import { buildApiUrl } from "../../config/api.js";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Regex pour valider l'email
   const validateEmail = (email) => {
@@ -19,7 +22,7 @@ export default function AdminLogin() {
     return regex.test(pw);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validateEmail(email)) {
@@ -35,9 +38,26 @@ export default function AdminLogin() {
     }
 
     setError("");
-    console.log("Email:", email);
-    console.log("Password:", password);
-    // Ici tu peux appeler ton API et rediriger vers le dashboard
+    setIsSubmitting(true);
+
+    try {
+      const data = await authService.login(email, password);
+
+      const roles = data.user?.roles || [];
+      const isAdmin = roles.includes("ROLE_ADMIN");
+
+      if (!isAdmin) {
+        authService.logout();
+        setError("Accès refusé : vous devez être administrateur.");
+        return;
+      }
+
+      window.location.href = "/admin/dashboard";
+    } catch (err) {
+      setError(err.message || "Connexion impossible");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -84,9 +104,10 @@ export default function AdminLogin() {
 
           <button
             type="submit"
-            className="w-full py-2 bg-[#DD5212] text-white rounded-lg hover:bg-orange-600 transition font-semibold"
+            disabled={isSubmitting}
+            className="w-full py-2 bg-[#DD5212] text-white rounded-lg hover:bg-orange-600 transition font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Se connecter
+            {isSubmitting ? "Connexion..." : "Se connecter"}
           </button>
         </form>
       </main>
