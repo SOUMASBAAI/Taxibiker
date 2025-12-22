@@ -1058,6 +1058,39 @@ export default function AdminDashboard() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const mapApiStatusToUi = (apiStatus) => {
+    switch (apiStatus) {
+      case "pending":
+        return "À confirmer";
+      case "confirmed":
+        return "Acceptée";
+      case "in_progress":
+        return "En cours";
+      case "completed":
+        return "Terminée";
+      case "cancelled":
+      default:
+        return "Annulée";
+    }
+  };
+
+  const mapUiStatusToApi = (uiStatus) => {
+    switch (uiStatus) {
+      case "À confirmer":
+        return "pending";
+      case "Acceptée":
+        return "confirmed";
+      case "En cours":
+        return "in_progress";
+      case "Terminée":
+        return "completed";
+      case "Annulée":
+      case "Refusée":
+      default:
+        return "cancelled";
+    }
+  };
+
   // Fetch real reservations from API
   useEffect(() => {
     const fetchReservations = async () => {
@@ -1079,16 +1112,7 @@ export default function AdminDashboard() {
             time: res.date.split(" ")[1]?.substring(0, 5) || "00:00",
             from: res.departure,
             to: res.arrival,
-            status:
-              res.status === "pending"
-                ? "En attente"
-                : res.status === "confirmed"
-                ? "Acceptée"
-                : res.status === "in_progress"
-                ? "En cours"
-                : res.status === "completed"
-                ? "Terminée"
-                : "Annulée",
+            status: mapApiStatusToUi(res.status),
             luggage: res.excessBaggage,
             stop: res.stop || "",
             price: parseFloat(res.price),
@@ -1142,7 +1166,7 @@ export default function AdminDashboard() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ status: newStatus }),
+          body: JSON.stringify({ status: mapUiStatusToApi(newStatus) }),
         }
       );
 
