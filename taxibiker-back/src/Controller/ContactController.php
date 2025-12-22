@@ -16,7 +16,7 @@ class ContactController extends AbstractController
     #[Route('/api/contact', name: 'api_contact', methods: ['POST'])]
     public function sendContactMessage(
         Request $request,
-        ?MailerInterface $mailer = null
+        EmailService $emailService
     ): JsonResponse {
         $data = json_decode($request->getContent(), true) ?? [];
 
@@ -40,44 +40,24 @@ class ContactController extends AbstractController
             ], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!$mailer) {
-            // Mailer non configuré : ne pas bloquer l'envoi, logguer l'info
-            return $this->json([
-                'success' => true,
-                'message' => 'Simulation envoi (mailer non configuré)',
-            ]);
-        }
+        $sent = $emailService->sendContactEmail(
+            $email,
+            sprintf('%s %s', $firstname, $lastname),
+            $phone,
+            $messageContent
+        );
 
-        try {
-            $adminEmail = $_ENV['CONTACT_RECEIVER'] ?? 'contact@taxibikerparis.com';
-
-            $emailMessage = (new Email())
-                ->from($email)
-                ->to($adminEmail)
-                ->subject(sprintf('Nouveau message de contact - %s %s', $firstname, $lastname))
-                ->text(
-                    sprintf(
-                        "Nom: %s %s\nEmail: %s\nTéléphone: %s\n\nMessage:\n%s",
-                        $firstname,
-                        $lastname,
-                        $email,
-                        $phone,
-                        $messageContent
-                    )
-                );
-
-            $mailer->send($emailMessage);
-
-            return $this->json([
-                'success' => true,
-                'message' => 'Message envoyé',
-            ]);
-        } catch (\Exception $e) {
+        if (!$sent) {
             return $this->json([
                 'success' => false,
-                'error' => 'Erreur lors de l\'envoi: ' . $e->getMessage(),
+                'error' => 'Erreur lors de l\'envoi du message',
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Message envoyé',
+        ]);
     }
 }
 

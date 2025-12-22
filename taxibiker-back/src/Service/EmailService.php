@@ -163,4 +163,62 @@ class EmailService
             return false;
         }
     }
+
+    /**
+     * Envoie un email depuis le formulaire de contact
+     */
+    public function sendContactEmail(
+        string $fromEmail,
+        string $fromName,
+        string $phone,
+        string $messageContent
+    ): bool {
+        if (!$this->isEnabled) {
+            $this->logger->info('Email désactivé - Simulation envoi contact', [
+                'from' => $fromEmail,
+                'name' => $fromName,
+                'phone' => $phone,
+                'message' => mb_substr($messageContent, 0, 120) . '...',
+            ]);
+            return true;
+        }
+
+        try {
+            $receiver = $_ENV['CONTACT_RECEIVER'] ?? $this->fromEmail;
+
+            $htmlBody = sprintf(
+                '<p><strong>Message de contact</strong></p>
+                 <p><strong>Nom:</strong> %s</p>
+                 <p><strong>Email:</strong> %s</p>
+                 <p><strong>Téléphone:</strong> %s</p>
+                 <p><strong>Message:</strong><br>%s</p>',
+                htmlspecialchars($fromName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+                htmlspecialchars($fromEmail, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+                htmlspecialchars($phone, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+                nl2br(htmlspecialchars($messageContent, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'))
+            );
+
+            $email = (new Email())
+                ->from($this->fromEmail)
+                ->to($receiver)
+                ->replyTo($fromEmail)
+                ->subject(sprintf('TaxiBiker - Contact de %s', $fromName))
+                ->html($htmlBody);
+
+            $this->mailer->send($email);
+
+            $this->logger->info('Email de contact envoyé', [
+                'to' => $receiver,
+                'reply_to' => $fromEmail,
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur envoi email de contact', [
+                'error' => $e->getMessage(),
+                'from' => $fromEmail,
+            ]);
+            return false;
+        }
+    }
 }
