@@ -4,6 +4,7 @@ import DashboardHeader from "../components/user/DashboardHeader";
 import Footer from "../components/Footer";
 import WhatsappButton from "../components/WhatsappButton";
 import authService from "../services/authService";
+import { buildApiUrl } from "../config/api.js";
 import taxiImage from "../assets/taxi.jpg";
 import casqueImg from "../assets/equipements/casque.png";
 import gantsImg from "../assets/equipements/gants.png";
@@ -27,6 +28,7 @@ export default function HomePage() {
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Vérifier si l'utilisateur est connecté
   const isAuthenticated = authService.isAuthenticated();
@@ -63,7 +65,7 @@ export default function HomePage() {
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^[0-9]{10,15}$/;
@@ -75,9 +77,37 @@ export default function HomePage() {
     if (!form.message) return setError("Message obligatoire");
 
     setError("");
-    setSuccess("Votre message a été envoyé avec succès !");
-    console.log("Formulaire envoyé :", form);
-    setForm({ firstname: "", lastname: "", email: "", phone: "", message: "" });
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch(buildApiUrl("contact"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Une erreur est survenue");
+      }
+
+      setSuccess("Votre message a été envoyé avec succès !");
+      setForm({
+        firstname: "",
+        lastname: "",
+        email: "",
+        phone: "",
+        message: "",
+      });
+    } catch (err) {
+      console.error("Erreur envoi contact:", err);
+      setError(err.message || "Impossible d'envoyer votre message");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const equipments = [
@@ -330,9 +360,10 @@ export default function HomePage() {
               />
               <button
                 type="submit"
-                className="bg-[#DD5212] text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-600 transition text-lg"
+                disabled={isSubmitting}
+                className="bg-[#DD5212] text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-600 transition text-lg disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Envoyer
+                {isSubmitting ? "Envoi..." : "Envoyer"}
               </button>
             </form>
           </div>
