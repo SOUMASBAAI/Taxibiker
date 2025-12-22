@@ -301,6 +301,7 @@ class ReservationController extends AbstractController
         }
 
         $newStatus = $data['status'];
+        $requestedType = $data['type'] ?? null;
         
         // Map French status to backend status
         $statusMap = [
@@ -315,16 +316,41 @@ class ReservationController extends AbstractController
 
         $backendStatus = $statusMap[$newStatus] ?? $newStatus;
 
-        // Chercher dans les réservations classiques
-        $reservation = $this->entityManager
-            ->getRepository(ClassicReservation::class)
-            ->find($id);
+        // Choisir le bon repository en fonction du type fourni pour éviter les collisions d'ID
+        $reservation = null;
 
-        if (!$reservation) {
-            // Chercher dans les réservations à la durée
+        if ($requestedType === 'hourly') {
             $reservation = $this->entityManager
                 ->getRepository(FlatRateBooking::class)
                 ->find($id);
+
+            if (!$reservation) {
+                // Fallback: tenter dans les réservations classiques si rien trouvé
+                $reservation = $this->entityManager
+                    ->getRepository(ClassicReservation::class)
+                    ->find($id);
+            }
+        } elseif ($requestedType === 'classic') {
+            $reservation = $this->entityManager
+                ->getRepository(ClassicReservation::class)
+                ->find($id);
+
+            if (!$reservation) {
+                $reservation = $this->entityManager
+                    ->getRepository(FlatRateBooking::class)
+                    ->find($id);
+            }
+        } else {
+            // Pas de type fourni : on tente les deux (comportement existant)
+            $reservation = $this->entityManager
+                ->getRepository(ClassicReservation::class)
+                ->find($id);
+
+            if (!$reservation) {
+                $reservation = $this->entityManager
+                    ->getRepository(FlatRateBooking::class)
+                    ->find($id);
+            }
         }
 
         if (!$reservation) {

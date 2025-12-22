@@ -100,7 +100,7 @@ export default function AdminReservations() {
     await handleStatusChange(id, "Annulée");
   };
 
-  const handleStatusChange = async (id, newStatus) => {
+  const handleStatusChange = async (id, newStatus, type) => {
     try {
       // Appeler l'API pour mettre à jour le statut dans la base de données
       const response = await fetch(
@@ -110,7 +110,10 @@ export default function AdminReservations() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ status: mapUiStatusToApi(newStatus) }),
+          body: JSON.stringify({
+            status: mapUiStatusToApi(newStatus),
+            type,
+          }),
         }
       );
 

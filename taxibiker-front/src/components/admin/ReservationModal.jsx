@@ -237,9 +237,9 @@ ${invoiceData.email}`;
               <button
                 onClick={() => {
                   if (reservation.status === "Acceptée") {
-                    onStatusChange(reservation.id, "Annulée");
+                    onStatusChange(reservation.id, "Annulée", reservation.type);
                   } else {
-                    onStatusChange(reservation.id, "Refusée");
+                    onStatusChange(reservation.id, "Refusée", reservation.type);
                   }
                   onClose();
                 }}
@@ -251,7 +251,7 @@ ${invoiceData.email}`;
           {reservation.status === "À confirmer" && (
             <button
               onClick={() => {
-                onStatusChange(reservation.id, "Acceptée");
+                onStatusChange(reservation.id, "Acceptée", reservation.type);
                 onClose();
               }}
               className="px-4 py-2 rounded bg-green-600 hover:bg-green-500 transition"
@@ -262,7 +262,7 @@ ${invoiceData.email}`;
           {reservation.status === "Acceptée" && (
             <button
               onClick={() => {
-                onStatusChange(reservation.id, "En cours");
+                onStatusChange(reservation.id, "En cours", reservation.type);
                 onClose();
               }}
               className="px-4 py-2 rounded bg-blue-600 "
@@ -273,7 +273,7 @@ ${invoiceData.email}`;
           {reservation.status === "En cours" && (
             <button
               onClick={() => {
-                onStatusChange(reservation.id, "Terminée");
+                onStatusChange(reservation.id, "Terminée", reservation.type);
                 onClose();
               }}
               className="px-4 py-2 rounded bg-purple-600 hover:bg-purple-500 transition"
