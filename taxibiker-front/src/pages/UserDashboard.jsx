@@ -302,6 +302,10 @@ export default function UserDashboard() {
     (r) => r.status === "En attente"
   );
 
+  const inProgressReservations = reservations.filter(
+    (r) => r.status === "En cours"
+  );
+
   const pastReservations = reservations.filter(
     (r) =>
       (r.status === "Acceptée" && new Date(r.date) < today) ||
@@ -394,6 +398,16 @@ export default function UserDashboard() {
                   En attente ({pendingConfirmationReservations.length})
                 </button>
                 <button
+                  onClick={() => setActiveTab("inProgress")}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                    activeTab === "inProgress"
+                      ? "border-orange-500 text-orange-500"
+                      : "border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300"
+                  }`}
+                >
+                  En cours ({inProgressReservations.length})
+                </button>
+                <button
                   onClick={() => setActiveTab("past")}
                   className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                     activeTab === "past"
@@ -412,6 +426,102 @@ export default function UserDashboard() {
               car le tarif varie selon le trajet.
             </div>
           </>
+        )}
+
+        {/* Réservations en cours */}
+        {!isLoading && activeTab === "inProgress" && (
+          <section className="mb-10">
+            {inProgressReservations.length === 0 ? (
+              <div className="text-center py-12 bg-gray-800/50 rounded-xl">
+                <div className="text-6xl mb-4">🚕</div>
+                <h3 className="text-xl font-semibold mb-2">
+                  Aucune course en cours
+                </h3>
+                <p className="text-gray-400">
+                  Vos courses actives apparaîtront ici
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {inProgressReservations.map((res) => (
+                  <article
+                    key={res.id}
+                    className="group bg-black border border-gray-700/50 rounded-2xl p-5 hover:border-orange-500/50 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <div className="bg-blue-500/20 p-2 rounded-lg">
+                          <FaClock className="text-blue-400 text-lg" />
+                        </div>
+                        <div>
+                          <h3 className="text-base font-bold text-white">
+                            {res.date}
+                          </h3>
+                          <p className="text-sm text-gray-400">{res.time}</p>
+                        </div>
+                      </div>
+                      <span className="px-3 py-1 bg-blue-500/20 text-blue-400 text-xs font-semibold rounded-full">
+                        En cours
+                      </span>
+                    </div>
+
+                    <div className="space-y-3 mb-4">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1 w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></div>
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-400 mb-1">Départ</p>
+                          <p className="text-sm text-white font-medium line-clamp-2">
+                            {res.from}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 pl-3">
+                        <div className="w-px h-6 bg-gray-600"></div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1 w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></div>
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-400 mb-1">Arrivée</p>
+                          <p className="text-sm text-white font-medium line-clamp-2">
+                            {res.to}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-400">
+                          Prix total
+                        </span>
+                        <span className="text-xl font-bold text-orange-400">
+                          {res.price}€
+                        </span>
+                      </div>
+                      {(res.luggage || res.stop) && (
+                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-300">
+                          {res.luggage && (
+                            <div className="flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 bg-orange-400 rounded-full"></span>
+                              <span>Bagage</span>
+                            </div>
+                          )}
+                          {res.stop && (
+                            <div className="flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 bg-orange-400 rounded-full"></span>
+                              <span>Stop</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
         )}
 
         {/* Réservations à venir */}
