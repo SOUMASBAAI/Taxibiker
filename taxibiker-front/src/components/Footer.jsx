@@ -7,9 +7,9 @@ export default function Footer() {
         
         {/* Logo + Slogan */}
         <div>
-          <h2 className="text-xl font-bold mb-2">🚖 TaxiBiker</h2>
+          <h2 className="text-xl font-bold mb-2"> TAXIBIKERPARIS</h2>
           <p className="text-gray-400 text-sm italic">
-            "Votre trajet, notre priorité 🚀"
+            "Votre trajet, notre priorité "
           </p>
         </div>
 
@@ -36,11 +36,11 @@ export default function Footer() {
           <ul className="space-y-2 text-gray-300 text-sm">
             <li className="flex items-center gap-2">
               <Phone size={16} className="text-gray-400" />
-              01 23 45 67 89
+              07 88 26 83 54
             </li>
             <li className="flex items-center gap-2">
               <Mail size={16} className="text-gray-400" />
-              contact@taxibike.com
+              contact@taxibikerparis.com
             </li>
           </ul>
         </div>
@@ -62,7 +62,7 @@ export default function Footer() {
 
       {/* Bas de page */}
       <div className="border-t border-white/10 mt-8 pt-4 text-center text-xs text-gray-400">
-        <p>© 2025 TaxiBiker. Tous droits réservés.</p>
+        <p>© 2026 TaxiBiker. Tous droits réservés.</p>
         <p className="mt-1">
           Ce site est une réalisation de <span className="text-white font-semibold">ISAKODE</span>.
         </p>
