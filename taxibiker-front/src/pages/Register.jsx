@@ -331,7 +331,7 @@ export default function Register() {
                   >
                     politique de confidentialité
                   </Link>{" "}
-                  de TaxiBiker.
+                  de TaxiBikerParis.
                 </label>
               </div>
             </div>

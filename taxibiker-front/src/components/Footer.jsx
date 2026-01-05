@@ -62,7 +62,7 @@ export default function Footer() {
 
       {/* Bas de page */}
       <div className="border-t border-white/10 mt-8 pt-4 text-center text-xs text-gray-400">
-        <p>© 2026 TaxiBiker. Tous droits réservés.</p>
+        <p>© 2026 TAXIBIKERPARIS. Tous droits réservés.</p>
         <p className="mt-1">
           Ce site est une réalisation de <span className="text-white font-semibold">ISAKODE</span>.
         </p>

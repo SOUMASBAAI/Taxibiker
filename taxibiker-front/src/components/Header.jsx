@@ -47,15 +47,13 @@ export default function Header() {
           <div className="flex items-center justify-between h-20">
             {/* Logo et Branding */}
             <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-2.5 rounded-xl shadow-lg">
-                <FaMotorcycle className="text-white text-xl" />
-              </div>
+              
               <div>
                 <a
                   href="/"
                   className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent hover:from-orange-400 hover:to-orange-300 transition-all duration-300"
                 >
-                  TAXIBIKER
+                  TAXIBIKERPARIS
                 </a>
                 <p className="text-xs text-gray-400 -mt-1">Transport Premium</p>
               </div>
@@ -128,11 +126,9 @@ export default function Header() {
           {/* Header mobile */}
           <div className="flex items-center justify-between p-6 border-b border-gray-800/50">
             <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-2 rounded-lg">
-                <FaMotorcycle className="text-white text-lg" />
-              </div>
+             
               <div>
-                <h2 className="text-lg font-bold text-white">TAXIBIKER</h2>
+                <h2 className="text-lg font-bold text-white">TAXIBIKERPARIS</h2>
                 <p className="text-xs text-gray-400">Menu</p>
               </div>
             </div>
