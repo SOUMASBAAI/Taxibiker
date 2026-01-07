@@ -968,7 +968,7 @@ export default function UserDashboard() {
       />
 
       {/* WhatsApp Button */}
-      <WhatsappButton number="33612345678" />
+      <WhatsappButton number="33788268354" />
     </div>
   );
 }

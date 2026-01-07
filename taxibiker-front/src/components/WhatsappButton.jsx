@@ -1,7 +1,7 @@
 // src/components/WhatsappButton.jsx
 import { FaWhatsapp } from "react-icons/fa";
 
-export default function WhatsappButton({ number = "33612345678" }) {
+export default function WhatsappButton({ number = "33788268354" }) {
   // Détecte si l'utilisateur est sur mobile
   const isMobile = /Mobi|Android/i.test(navigator.userAgent);
   const link = isMobile

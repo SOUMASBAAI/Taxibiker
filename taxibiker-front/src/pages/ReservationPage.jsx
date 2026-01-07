@@ -1707,7 +1707,7 @@ export default function ReservationPage() {
       <Footer />
 
       {/* WhatsApp Button */}
-      <WhatsappButton number="33612345678" />
+      <WhatsappButton number="33788268354" />
 
       {/* Modal de confirmation de réservation */}
       {reservationSuccess && (

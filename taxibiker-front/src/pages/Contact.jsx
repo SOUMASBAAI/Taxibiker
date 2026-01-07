@@ -145,7 +145,7 @@ export default function ContactForm() {
         </section>
       </main>
       {/* Bouton WhatsApp flottant */}
-      <WhatsappButton number="33612345678" />
+      <WhatsappButton number="33788268354" />
     </>
   );
 }
