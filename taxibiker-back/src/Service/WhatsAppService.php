@@ -12,6 +12,7 @@ class WhatsAppService
     private LoggerInterface $logger;
     private bool $isEnabled;
     private bool $useTemplates;
+    private array $templateContentSids;
 
     public function __construct(
         ?string $twilioAccountSid,
@@ -186,7 +187,8 @@ class WhatsAppService
                 'parameters' => $parameters
             ]);
 
-            // Twilio Content API: utiliser le nom du template avec contentVariables
+            // Twilio Content API: utiliser le Content SID (commence par HX...)
+            // Le templateName doit être le Content SID réel du template dans Twilio
             // Le format doit être: {"1": "value1", "2": "value2"} etc.
             $contentVariables = [];
             foreach ($parameters as $key => $value) {
@@ -194,12 +196,24 @@ class WhatsAppService
             }
             
             $this->logToFile('Content variables: ' . json_encode($contentVariables));
+            $this->logToFile('Using Content SID: ' . $templateName);
+            
+            // Convertir le nom du template en Content SID si nécessaire
+            $contentSid = $this->getTemplateContentSid($templateName);
+            
+            if (!$contentSid) {
+                $this->logToFile('ERREUR: Content SID non trouvé pour le template: ' . $templateName);
+                $this->logToFile('Vérifiez que le Content SID est configuré dans les variables d\'environnement');
+                throw new \Exception("Content SID non configuré pour le template: $templateName");
+            }
+            
+            $this->logToFile('Content SID résolu: ' . $contentSid);
             
             $message = $this->twilioClient->messages->create(
                 $toAddress,
                 [
                     'from' => $fromAddress,
-                    'contentSid' => $templateName,
+                    'contentSid' => $contentSid,
                     'contentVariables' => json_encode($contentVariables)
                 ]
             );
@@ -217,19 +231,37 @@ class WhatsAppService
             return true;
         } catch (\Twilio\Exceptions\RestException $e) {
             $this->logToFile('=== ERREUR TWILIO TEMPLATE ===');
-            $this->logToFile('Code: ' . $e->getCode());
+            $this->logToFile('Code: ' . (string)$e->getCode());
             $this->logToFile('Message: ' . $e->getMessage());
             $this->logToFile('Template: ' . $templateName);
+            $this->logToFile('From: ' . $fromAddress);
+            $this->logToFile('To: ' . $toAddress);
             
+            // Obtenir plus de détails de l'erreur
             $responseContent = null;
+            $statusCode = null;
             try {
-                $response = method_exists($e, 'getResponse') ? $e->getResponse() : null;
-                $responseContent = $response && method_exists($response, 'getContent') ? $response->getContent() : null;
+                $statusCode = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : null;
+                $this->logToFile('Status Code: ' . ($statusCode ?? 'N/A'));
+                
+                if (method_exists($e, 'getResponse') && $e->getResponse()) {
+                    $response = $e->getResponse();
+                    $responseContent = method_exists($response, 'getContent') ? $response->getContent() : null;
+                    $this->logToFile('Response Content: ' . ($responseContent ?? 'N/A'));
+                    
+                    // Essayer de décoder si c'est du JSON
+                    if ($responseContent) {
+                        $decoded = json_decode($responseContent, true);
+                        if ($decoded) {
+                            $this->logToFile('Response JSON: ' . json_encode($decoded, JSON_PRETTY_PRINT));
+                        }
+                    }
+                }
             } catch (\Exception $ex) {
-                // Ignore errors when trying to get response
+                $this->logToFile('Erreur lors de la récupération de la réponse: ' . $ex->getMessage());
             }
             
-            $this->logToFile('Response: ' . ($responseContent ?? 'N/A'));
+            $this->logToFile('=== FIN ERREUR TWILIO TEMPLATE ===');
             
             $this->logger->error('Erreur Twilio envoi template WhatsApp', [
                 'error_code' => $e->getCode(),
@@ -487,6 +519,30 @@ class WhatsAppService
         $message .= "\n⚡ *Action requise dans le dashboard admin*";
 
         return $message;
+    }
+
+    /**
+     * Récupère le Content SID pour un nom de template donné
+     * Les Content SIDs doivent être configurés dans les variables d'environnement
+     */
+    private function getTemplateContentSid(string $templateName): ?string
+    {
+        // Mapping des noms de templates vers les Content SIDs
+        // Ces Content SIDs doivent être configurés dans .env
+        $mapping = [
+            'reservation_confirmation' => $_ENV['TWILIO_TEMPLATE_RESERVATION_CONFIRMATION'] ?? null,
+            'reservation_accepted' => $_ENV['TWILIO_TEMPLATE_RESERVATION_ACCEPTED'] ?? null,
+            'reservation_cancelled' => $_ENV['TWILIO_TEMPLATE_RESERVATION_CANCELLED'] ?? null,
+            'admin_new_reservation' => $_ENV['TWILIO_TEMPLATE_ADMIN_NEW_RESERVATION'] ?? null,
+        ];
+        
+        // Si le templateName est déjà un Content SID (commence par HX), l'utiliser directement
+        if (str_starts_with($templateName, 'HX')) {
+            return $templateName;
+        }
+        
+        // Sinon, chercher dans le mapping
+        return $mapping[$templateName] ?? null;
     }
 
     /**
