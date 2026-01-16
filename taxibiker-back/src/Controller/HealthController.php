@@ -169,16 +169,29 @@ class HealthController extends AbstractController
                         'last_lines' => $lastLines
                     ];
                     
-                    // Filtrer les logs WhatsApp
-                    $whatsappLines = array_filter($lastLines, function($line) {
-                        return stripos($line, 'WhatsApp') !== false || 
-                               stripos($line, 'Twilio') !== false ||
-                               stripos($line, 'sendWhatsAppNotifications') !== false ||
-                               stripos($line, 'sendTemplateMessage') !== false ||
-                               stripos($line, 'DÉBUT sendWhatsAppNotifications') !== false ||
-                               stripos($line, 'Envoi template') !== false ||
-                               stripos($line, 'ERREUR') !== false;
-                    });
+                    // Filtrer les logs WhatsApp - prendre aussi les lignes autour des erreurs
+                    $whatsappLines = [];
+                    foreach ($lastLines as $index => $line) {
+                        if (stripos($line, 'WhatsApp') !== false || 
+                            stripos($line, 'Twilio') !== false ||
+                            stripos($line, 'sendWhatsAppNotifications') !== false ||
+                            stripos($line, 'sendTemplateMessage') !== false ||
+                            stripos($line, 'DÉBUT sendWhatsAppNotifications') !== false ||
+                            stripos($line, 'Envoi template') !== false ||
+                            stripos($line, 'ERREUR') !== false ||
+                            stripos($line, 'Template name') !== false ||
+                            stripos($line, 'Parameters') !== false ||
+                            stripos($line, 'Code:') !== false ||
+                            stripos($line, 'Message:') !== false ||
+                            stripos($line, 'Response:') !== false) {
+                            // Prendre aussi les 2 lignes avant et après pour contexte
+                            for ($i = max(0, $index - 2); $i <= min(count($lastLines) - 1, $index + 2); $i++) {
+                                if (!in_array($lastLines[$i], $whatsappLines)) {
+                                    $whatsappLines[] = $lastLines[$i];
+                                }
+                            }
+                        }
+                    }
                     
                     if (!empty($whatsappLines)) {
                         $whatsappLogs['php_error_log_' . basename($phpErrorLog)] = [
@@ -212,6 +225,45 @@ class HealthController extends AbstractController
             }, $logs),
             'timestamp' => date('c'),
             'note' => 'Les logs error_log() PHP peuvent être dans les logs Apache/Nginx. Vérifiez aussi cPanel -> Error Logs'
+        ]);
+    }
+
+    #[Route('/logs/whatsapp', name: 'whatsapp_logs', methods: ['GET'])]
+    public function viewWhatsAppLogs(): JsonResponse
+    {
+        // Endpoint spécialisé pour les logs WhatsApp - affiche les dernières lignes complètes
+        $logFile = $this->getParameter('kernel.project_dir') . '/var/log/whatsapp_debug.log';
+        
+        if (!file_exists($logFile)) {
+            return new JsonResponse([
+                'status' => 'ok',
+                'message' => 'Fichier de log WhatsApp non trouvé',
+                'log_file' => $logFile,
+                'lines' => []
+            ]);
+        }
+        
+        // Lire les 100 dernières lignes
+        $lines = file($logFile);
+        if (!$lines) {
+            return new JsonResponse([
+                'status' => 'ok',
+                'message' => 'Fichier de log vide',
+                'log_file' => $logFile,
+                'lines' => []
+            ]);
+        }
+        
+        $lastLines = array_slice($lines, -100);
+        
+        return new JsonResponse([
+            'status' => 'ok',
+            'log_file' => $logFile,
+            'file_size' => filesize($logFile),
+            'total_lines' => count($lines),
+            'showing_last' => count($lastLines),
+            'last_modified' => date('c', filemtime($logFile)),
+            'lines' => array_map('trim', $lastLines)
         ]);
     }
 
