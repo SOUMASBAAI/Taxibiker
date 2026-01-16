@@ -28,16 +28,16 @@ class WhatsAppService
         $twilioAuthToken = $twilioAuthToken ? trim($twilioAuthToken, ' "\'') : null;
         $twilioWhatsAppNumber = $twilioWhatsAppNumber ? trim($twilioWhatsAppNumber, ' "\'') : null;
         
-        // Log pour déboguer
-        error_log('=== WhatsAppService Constructor ===');
-        error_log('Account SID: ' . ($twilioAccountSid ? 'PRÉSENT (' . strlen($twilioAccountSid) . ' chars)' : 'VIDE'));
-        error_log('Auth Token: ' . ($twilioAuthToken ? 'PRÉSENT (' . strlen($twilioAuthToken) . ' chars)' : 'VIDE'));
-        error_log('WhatsApp Number: ' . ($twilioWhatsAppNumber ?: 'VIDE'));
+        // Log pour déboguer (dans error_log PHP ET dans fichier dédié)
+        $this->logToFile('=== WhatsAppService Constructor ===');
+        $this->logToFile('Account SID: ' . ($twilioAccountSid ? 'PRÉSENT (' . strlen($twilioAccountSid) . ' chars)' : 'VIDE'));
+        $this->logToFile('Auth Token: ' . ($twilioAuthToken ? 'PRÉSENT (' . strlen($twilioAuthToken) . ' chars)' : 'VIDE'));
+        $this->logToFile('WhatsApp Number: ' . ($twilioWhatsAppNumber ?: 'VIDE'));
         
         // Vérifier si les credentials Twilio sont configurés
         $this->isEnabled = !empty($twilioAccountSid) && !empty($twilioAuthToken) && !empty($twilioWhatsAppNumber);
         
-        error_log('Service enabled: ' . ($this->isEnabled ? 'OUI' : 'NON'));
+        $this->logToFile('Service enabled: ' . ($this->isEnabled ? 'OUI' : 'NON'));
         
         // Déterminer si on utilise les templates (production) ou messages libres (sandbox/dev)
         $this->useTemplates = $appEnv === 'prod' && !str_contains($twilioWhatsAppNumber ?? '', '+14155238886');
@@ -65,14 +65,14 @@ class WhatsAppService
     public function sendMessage(string $to, string $message): bool
     {
         // Log de débogage
-        error_log('=== WhatsAppService::sendMessage ===');
-        error_log('Service enabled: ' . ($this->isEnabled ? 'OUI' : 'NON'));
-        error_log('To: ' . $to);
-        error_log('WhatsApp Number: ' . $this->twilioWhatsAppNumber);
+        $this->logToFile('=== WhatsAppService::sendMessage ===');
+        $this->logToFile('Service enabled: ' . ($this->isEnabled ? 'OUI' : 'NON'));
+        $this->logToFile('To: ' . $to);
+        $this->logToFile('WhatsApp Number: ' . $this->twilioWhatsAppNumber);
         
         // Si le service WhatsApp n'est pas configuré, on simule un envoi réussi
         if (!$this->isEnabled) {
-            error_log('WhatsApp DÉSACTIVÉ - Message simulé');
+            $this->logToFile('WhatsApp DÉSACTIVÉ - Message simulé');
             $this->logger->info('WhatsApp désactivé - Message simulé', [
                 'to' => $to,
                 'message' => substr($message, 0, 100) . '...'
@@ -81,15 +81,15 @@ class WhatsAppService
         }
 
         try {
-            error_log('Tentative d\'envoi WhatsApp...');
+            $this->logToFile('Tentative d\'envoi WhatsApp...');
             // Format du numéro : +33XXXXXXXXX
             $formattedNumber = $this->formatPhoneNumber($to);
-            error_log('Numéro formaté: ' . $formattedNumber);
+            $this->logToFile('Numéro formaté: ' . $formattedNumber);
             
             $fromAddress = "whatsapp:$this->twilioWhatsAppNumber";
             $toAddress = "whatsapp:$formattedNumber";
-            error_log('From address: ' . $fromAddress);
-            error_log('To address: ' . $toAddress);
+            $this->logToFile('From address: ' . $fromAddress);
+            $this->logToFile('To address: ' . $toAddress);
             
             $this->logger->info('Envoi message WhatsApp', [
                 'from' => $fromAddress,
@@ -105,7 +105,7 @@ class WhatsAppService
                 ]
             );
 
-            error_log('Message WhatsApp envoyé avec succès! SID: ' . $message->sid);
+            $this->logToFile('Message WhatsApp envoyé avec succès! SID: ' . $message->sid);
             $this->logger->info('Message WhatsApp envoyé avec succès', [
                 'sid' => $message->sid,
                 'status' => $message->status,
@@ -115,9 +115,9 @@ class WhatsAppService
 
             return true;
         } catch (\Twilio\Exceptions\RestException $e) {
-            error_log('=== ERREUR TWILIO ===');
-            error_log('Code: ' . $e->getCode());
-            error_log('Message: ' . $e->getMessage());
+            $this->logToFile('=== ERREUR TWILIO ===');
+            $this->logToFile('Code: ' . $e->getCode());
+            $this->logToFile('Message: ' . $e->getMessage());
             
             $responseContent = null;
             try {
@@ -127,7 +127,7 @@ class WhatsAppService
                 // Ignore errors when trying to get response
             }
             
-            error_log('Response: ' . ($responseContent ?? 'N/A'));
+            $this->logToFile('Response: ' . ($responseContent ?? 'N/A'));
             
             $this->logger->error('Erreur Twilio envoi WhatsApp', [
                 'error_code' => $e->getCode(),
@@ -139,10 +139,10 @@ class WhatsAppService
             ]);
             return false;
         } catch (\Exception $e) {
-            error_log('=== ERREUR GÉNÉRALE ===');
-            error_log('Type: ' . get_class($e));
-            error_log('Message: ' . $e->getMessage());
-            error_log('Trace: ' . $e->getTraceAsString());
+            $this->logToFile('=== ERREUR GÉNÉRALE ===');
+            $this->logToFile('Type: ' . get_class($e));
+            $this->logToFile('Message: ' . $e->getMessage());
+            $this->logToFile('Trace: ' . $e->getTraceAsString());
             
             $this->logger->error('Erreur générale envoi WhatsApp', [
                 'error' => $e->getMessage(),
@@ -169,15 +169,15 @@ class WhatsAppService
         }
 
         try {
-            error_log('=== Envoi template WhatsApp ===');
+            $this->logToFile('=== Envoi template WhatsApp ===');
             $formattedNumber = $this->formatPhoneNumber($to);
             $fromAddress = "whatsapp:$this->twilioWhatsAppNumber";
             $toAddress = "whatsapp:$formattedNumber";
             
-            error_log('Template name: ' . $templateName);
-            error_log('Parameters: ' . json_encode($parameters));
-            error_log('From: ' . $fromAddress);
-            error_log('To: ' . $toAddress);
+            $this->logToFile('Template name: ' . $templateName);
+            $this->logToFile('Parameters: ' . json_encode($parameters));
+            $this->logToFile('From: ' . $fromAddress);
+            $this->logToFile('To: ' . $toAddress);
             
             $this->logger->info('Envoi template WhatsApp', [
                 'from' => $fromAddress,
@@ -193,7 +193,7 @@ class WhatsAppService
                 $contentVariables[$key] = (string)$value;
             }
             
-            error_log('Content variables: ' . json_encode($contentVariables));
+            $this->logToFile('Content variables: ' . json_encode($contentVariables));
             
             $message = $this->twilioClient->messages->create(
                 $toAddress,
@@ -204,7 +204,7 @@ class WhatsAppService
                 ]
             );
             
-            error_log('Template envoyé! SID: ' . $message->sid);
+            $this->logToFile('Template envoyé! SID: ' . $message->sid);
 
             $this->logger->info('Template WhatsApp envoyé avec succès', [
                 'sid' => $message->sid,
@@ -216,10 +216,10 @@ class WhatsAppService
 
             return true;
         } catch (\Twilio\Exceptions\RestException $e) {
-            error_log('=== ERREUR TWILIO TEMPLATE ===');
-            error_log('Code: ' . $e->getCode());
-            error_log('Message: ' . $e->getMessage());
-            error_log('Template: ' . $templateName);
+            $this->logToFile('=== ERREUR TWILIO TEMPLATE ===');
+            $this->logToFile('Code: ' . $e->getCode());
+            $this->logToFile('Message: ' . $e->getMessage());
+            $this->logToFile('Template: ' . $templateName);
             
             $responseContent = null;
             try {
@@ -229,7 +229,7 @@ class WhatsAppService
                 // Ignore errors when trying to get response
             }
             
-            error_log('Response: ' . ($responseContent ?? 'N/A'));
+            $this->logToFile('Response: ' . ($responseContent ?? 'N/A'));
             
             $this->logger->error('Erreur Twilio envoi template WhatsApp', [
                 'error_code' => $e->getCode(),
@@ -522,5 +522,29 @@ class WhatsAppService
     {
         // Format E.164: commence par + suivi de 1-15 chiffres
         return preg_match('/^\+[1-9]\d{1,14}$/', $number) === 1;
+    }
+
+    /**
+     * Écrit dans un fichier de log dédié pour le débogage
+     */
+    private function logToFile(string $message): void
+    {
+        // Double logging : error_log PHP et fichier dédié
+        error_log($message);
+        
+        // Écrire aussi dans un fichier dédié dans var/log
+        try {
+            $logDir = __DIR__ . '/../../var/log';
+            if (!is_dir($logDir)) {
+                @mkdir($logDir, 0755, true);
+            }
+            
+            $logFile = $logDir . '/whatsapp_debug.log';
+            $timestamp = date('Y-m-d H:i:s');
+            $logEntry = "[$timestamp] $message" . PHP_EOL;
+            @file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
+        } catch (\Exception $e) {
+            // Ignore les erreurs de logging
+        }
     }
 }
