@@ -169,9 +169,15 @@ class WhatsAppService
         }
 
         try {
+            error_log('=== Envoi template WhatsApp ===');
             $formattedNumber = $this->formatPhoneNumber($to);
             $fromAddress = "whatsapp:$this->twilioWhatsAppNumber";
             $toAddress = "whatsapp:$formattedNumber";
+            
+            error_log('Template name: ' . $templateName);
+            error_log('Parameters: ' . json_encode($parameters));
+            error_log('From: ' . $fromAddress);
+            error_log('To: ' . $toAddress);
             
             $this->logger->info('Envoi template WhatsApp', [
                 'from' => $fromAddress,
@@ -180,14 +186,25 @@ class WhatsAppService
                 'parameters' => $parameters
             ]);
 
+            // Twilio Content API: utiliser le nom du template avec contentVariables
+            // Le format doit être: {"1": "value1", "2": "value2"} etc.
+            $contentVariables = [];
+            foreach ($parameters as $key => $value) {
+                $contentVariables[$key] = (string)$value;
+            }
+            
+            error_log('Content variables: ' . json_encode($contentVariables));
+            
             $message = $this->twilioClient->messages->create(
                 $toAddress,
                 [
                     'from' => $fromAddress,
                     'contentSid' => $templateName,
-                    'contentVariables' => json_encode($parameters)
+                    'contentVariables' => json_encode($contentVariables)
                 ]
             );
+            
+            error_log('Template envoyé! SID: ' . $message->sid);
 
             $this->logger->info('Template WhatsApp envoyé avec succès', [
                 'sid' => $message->sid,
@@ -199,6 +216,11 @@ class WhatsAppService
 
             return true;
         } catch (\Twilio\Exceptions\RestException $e) {
+            error_log('=== ERREUR TWILIO TEMPLATE ===');
+            error_log('Code: ' . $e->getCode());
+            error_log('Message: ' . $e->getMessage());
+            error_log('Template: ' . $templateName);
+            
             $responseContent = null;
             try {
                 $response = method_exists($e, 'getResponse') ? $e->getResponse() : null;
@@ -206,6 +228,8 @@ class WhatsAppService
             } catch (\Exception $ex) {
                 // Ignore errors when trying to get response
             }
+            
+            error_log('Response: ' . ($responseContent ?? 'N/A'));
             
             $this->logger->error('Erreur Twilio envoi template WhatsApp', [
                 'error_code' => $e->getCode(),
