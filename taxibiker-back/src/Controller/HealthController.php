@@ -93,6 +93,76 @@ class HealthController extends AbstractController
         }
     }
 
+    #[Route('/logs', name: 'logs', methods: ['GET'])]
+    public function viewLogs(): JsonResponse
+    {
+        // Endpoint temporaire pour voir les logs - À SUPPRIMER EN PRODUCTION
+        $logDir = $this->getParameter('kernel.project_dir') . '/var/log';
+        $logs = [];
+        
+        // Chercher les fichiers de logs Symfony
+        if (is_dir($logDir)) {
+            $logFiles = glob($logDir . '/*.log');
+            foreach ($logFiles as $logFile) {
+                $fileName = basename($logFile);
+                // Lire les 100 dernières lignes
+                $lines = file($logFile);
+                if ($lines) {
+                    $lastLines = array_slice($lines, -100);
+                    $logs[$fileName] = [
+                        'size' => filesize($logFile),
+                        'modified' => date('c', filemtime($logFile)),
+                        'last_lines' => $lastLines
+                    ];
+                }
+            }
+        }
+        
+        // Chercher aussi dans les logs PHP error_log
+        $phpErrorLog = ini_get('error_log');
+        if ($phpErrorLog && file_exists($phpErrorLog)) {
+            $lines = file($phpErrorLog);
+            if ($lines) {
+                $lastLines = array_slice($lines, -100);
+                $logs['php_error_log'] = [
+                    'path' => $phpErrorLog,
+                    'size' => filesize($phpErrorLog),
+                    'modified' => date('c', filemtime($phpErrorLog)),
+                    'last_lines' => $lastLines
+                ];
+            }
+        }
+        
+        // Filtrer les logs WhatsApp uniquement
+        $whatsappLogs = [];
+        foreach ($logs as $fileName => $logData) {
+            $whatsappLines = array_filter($logData['last_lines'], function($line) {
+                return stripos($line, 'WhatsApp') !== false || 
+                       stripos($line, 'Twilio') !== false ||
+                       stripos($line, 'sendWhatsAppNotifications') !== false ||
+                       stripos($line, 'sendTemplateMessage') !== false;
+            });
+            
+            if (!empty($whatsappLines)) {
+                $whatsappLogs[$fileName] = [
+                    'path' => $logData['path'] ?? $fileName,
+                    'size' => $logData['size'],
+                    'modified' => $logData['modified'],
+                    'whatsapp_lines' => array_values($whatsappLines)
+                ];
+            }
+        }
+        
+        return new JsonResponse([
+            'status' => 'ok',
+            'log_directory' => $logDir,
+            'logs_found' => count($logs),
+            'whatsapp_logs' => $whatsappLogs,
+            'all_logs' => $logs,
+            'timestamp' => date('c')
+        ]);
+    }
+
     private function checkDatabase(): array
     {
         try {
