@@ -23,8 +23,21 @@ class WhatsAppService
         // Initialiser le logger en premier
         $this->logger = $logger;
         
+        // Nettoyer les valeurs (enlever les guillemets si présents)
+        $twilioAccountSid = $twilioAccountSid ? trim($twilioAccountSid, ' "\'') : null;
+        $twilioAuthToken = $twilioAuthToken ? trim($twilioAuthToken, ' "\'') : null;
+        $twilioWhatsAppNumber = $twilioWhatsAppNumber ? trim($twilioWhatsAppNumber, ' "\'') : null;
+        
+        // Log pour déboguer
+        error_log('=== WhatsAppService Constructor ===');
+        error_log('Account SID: ' . ($twilioAccountSid ? 'PRÉSENT (' . strlen($twilioAccountSid) . ' chars)' : 'VIDE'));
+        error_log('Auth Token: ' . ($twilioAuthToken ? 'PRÉSENT (' . strlen($twilioAuthToken) . ' chars)' : 'VIDE'));
+        error_log('WhatsApp Number: ' . ($twilioWhatsAppNumber ?: 'VIDE'));
+        
         // Vérifier si les credentials Twilio sont configurés
         $this->isEnabled = !empty($twilioAccountSid) && !empty($twilioAuthToken) && !empty($twilioWhatsAppNumber);
+        
+        error_log('Service enabled: ' . ($this->isEnabled ? 'OUI' : 'NON'));
         
         // Déterminer si on utilise les templates (production) ou messages libres (sandbox/dev)
         $this->useTemplates = $appEnv === 'prod' && !str_contains($twilioWhatsAppNumber ?? '', '+14155238886');
@@ -33,6 +46,7 @@ class WhatsAppService
             $this->twilioClient = new Client($twilioAccountSid, $twilioAuthToken);
             // Normaliser le numéro WhatsApp : enlever le préfixe "whatsapp:" s'il existe
             $this->twilioWhatsAppNumber = $this->normalizeWhatsAppNumber($twilioWhatsAppNumber);
+            error_log('Numéro WhatsApp normalisé: ' . $this->twilioWhatsAppNumber);
             
             $mode = $this->useTemplates ? 'templates (production)' : 'messages libres (sandbox/dev)';
             $this->logger->info("WhatsApp Service activé en mode: $mode", [
