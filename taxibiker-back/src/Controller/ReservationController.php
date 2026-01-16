@@ -674,10 +674,14 @@ class ReservationController extends AbstractController
     private function sendWhatsAppNotifications($reservation, User $user, array $data): void
     {
         try {
+            // Log pour déboguer
+            error_log('=== DÉBUT sendWhatsAppNotifications ===');
+            error_log('User phone: ' . $user->getPhoneNumber());
+            
             // Préparer les données pour les notifications
             $reservationData = [
-                'firstname' => $user->getFirstname(),
-                'lastname' => $user->getLastname(),
+                'firstname' => $user->getFirstName(),
+                'lastname' => $user->getLastName(),
                 'email' => $user->getEmail(),
                 'phone' => $user->getPhoneNumber(),
                 'date' => $reservation->getDate()->format('d/m/Y'),
@@ -685,6 +689,8 @@ class ReservationController extends AbstractController
                 'price' => $reservation->getPrice(),
                 'paymentMethod' => $reservation->getPaymentMethod()
             ];
+            
+            error_log('Reservation data prepared: ' . json_encode($reservationData));
 
             // Ajouter les données spécifiques selon le type de réservation
             if ($reservation instanceof ClassicReservation) {
@@ -702,23 +708,32 @@ class ReservationController extends AbstractController
             }
 
             // Notification au client
-            $this->whatsAppService->sendReservationConfirmation(
+            error_log('Envoi notification client...');
+            $result = $this->whatsAppService->sendReservationConfirmation(
                 $user->getPhoneNumber(),
                 $reservationData
             );
+            error_log('Résultat envoi client: ' . ($result ? 'SUCCÈS' : 'ÉCHEC'));
 
             // Notification à l'admin
             $adminPhoneNumber = $this->parameterBag->get('admin.whatsapp_number');
+            error_log('Admin phone number: ' . ($adminPhoneNumber ?? 'NON CONFIGURÉ'));
             if ($adminPhoneNumber) {
-                $this->whatsAppService->sendAdminNotification(
+                error_log('Envoi notification admin...');
+                $adminResult = $this->whatsAppService->sendAdminNotification(
                     $adminPhoneNumber,
                     $reservationData
                 );
+                error_log('Résultat envoi admin: ' . ($adminResult ? 'SUCCÈS' : 'ÉCHEC'));
             }
+
+            error_log('=== FIN sendWhatsAppNotifications ===');
 
         } catch (\Exception $e) {
             // Log l'erreur mais ne pas faire échouer la réservation
+            error_log('=== ERREUR sendWhatsAppNotifications ===');
             error_log('Erreur envoi WhatsApp: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
         }
     }
 
@@ -742,8 +757,8 @@ class ReservationController extends AbstractController
             
             // Préparer les données de la réservation
             $reservationData = [
-                'firstname' => $user->getFirstname(),
-                'lastname' => $user->getLastname(),
+                'firstname' => $user->getFirstName(),
+                'lastname' => $user->getLastName(),
                 'date' => $reservation->getDate()->format('d/m/Y'),
                 'time' => $reservation->getDate()->format('H:i'),
                 'price' => $reservation->getPrice()

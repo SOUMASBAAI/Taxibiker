@@ -50,8 +50,15 @@ class WhatsAppService
      */
     public function sendMessage(string $to, string $message): bool
     {
+        // Log de débogage
+        error_log('=== WhatsAppService::sendMessage ===');
+        error_log('Service enabled: ' . ($this->isEnabled ? 'OUI' : 'NON'));
+        error_log('To: ' . $to);
+        error_log('WhatsApp Number: ' . $this->twilioWhatsAppNumber);
+        
         // Si le service WhatsApp n'est pas configuré, on simule un envoi réussi
         if (!$this->isEnabled) {
+            error_log('WhatsApp DÉSACTIVÉ - Message simulé');
             $this->logger->info('WhatsApp désactivé - Message simulé', [
                 'to' => $to,
                 'message' => substr($message, 0, 100) . '...'
@@ -60,11 +67,15 @@ class WhatsAppService
         }
 
         try {
+            error_log('Tentative d\'envoi WhatsApp...');
             // Format du numéro : +33XXXXXXXXX
             $formattedNumber = $this->formatPhoneNumber($to);
+            error_log('Numéro formaté: ' . $formattedNumber);
             
             $fromAddress = "whatsapp:$this->twilioWhatsAppNumber";
             $toAddress = "whatsapp:$formattedNumber";
+            error_log('From address: ' . $fromAddress);
+            error_log('To address: ' . $toAddress);
             
             $this->logger->info('Envoi message WhatsApp', [
                 'from' => $fromAddress,
@@ -80,6 +91,7 @@ class WhatsAppService
                 ]
             );
 
+            error_log('Message WhatsApp envoyé avec succès! SID: ' . $message->sid);
             $this->logger->info('Message WhatsApp envoyé avec succès', [
                 'sid' => $message->sid,
                 'status' => $message->status,
@@ -89,6 +101,10 @@ class WhatsAppService
 
             return true;
         } catch (\Twilio\Exceptions\RestException $e) {
+            error_log('=== ERREUR TWILIO ===');
+            error_log('Code: ' . $e->getCode());
+            error_log('Message: ' . $e->getMessage());
+            
             $responseContent = null;
             try {
                 $response = method_exists($e, 'getResponse') ? $e->getResponse() : null;
@@ -96,6 +112,8 @@ class WhatsAppService
             } catch (\Exception $ex) {
                 // Ignore errors when trying to get response
             }
+            
+            error_log('Response: ' . ($responseContent ?? 'N/A'));
             
             $this->logger->error('Erreur Twilio envoi WhatsApp', [
                 'error_code' => $e->getCode(),
@@ -107,6 +125,11 @@ class WhatsAppService
             ]);
             return false;
         } catch (\Exception $e) {
+            error_log('=== ERREUR GÉNÉRALE ===');
+            error_log('Type: ' . get_class($e));
+            error_log('Message: ' . $e->getMessage());
+            error_log('Trace: ' . $e->getTraceAsString());
+            
             $this->logger->error('Erreur générale envoi WhatsApp', [
                 'error' => $e->getMessage(),
                 'error_class' => get_class($e),

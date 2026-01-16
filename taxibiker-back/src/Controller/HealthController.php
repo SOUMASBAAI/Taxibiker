@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Service\WhatsAppService;
 use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -12,7 +13,8 @@ use Symfony\Component\Routing\Annotation\Route;
 class HealthController extends AbstractController
 {
     public function __construct(
-        private Connection $connection
+        private Connection $connection,
+        private ?WhatsAppService $whatsAppService = null
     ) {
     }
 
@@ -58,6 +60,37 @@ class HealthController extends AbstractController
             'message' => 'TaxiBiker API is running',
             'timestamp' => date('c')
         ]);
+    }
+
+    #[Route('/whatsapp', name: 'whatsapp', methods: ['GET'])]
+    public function whatsappCheck(): JsonResponse
+    {
+        if (!$this->whatsAppService) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => 'WhatsApp service not available',
+                'error' => 'Service not injected'
+            ], Response::HTTP_SERVICE_UNAVAILABLE);
+        }
+
+        try {
+            $status = $this->whatsAppService->getConfigurationStatus();
+            
+            return new JsonResponse([
+                'status' => $status['enabled'] ? 'ok' : 'warning',
+                'message' => $status['enabled'] 
+                    ? 'WhatsApp service is configured' 
+                    : 'WhatsApp service is not configured',
+                'configuration' => $status,
+                'timestamp' => date('c')
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => 'Error checking WhatsApp configuration',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     private function checkDatabase(): array
