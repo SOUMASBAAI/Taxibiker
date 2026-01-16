@@ -31,10 +31,13 @@ class WhatsAppService
         
         if ($this->isEnabled) {
             $this->twilioClient = new Client($twilioAccountSid, $twilioAuthToken);
-            $this->twilioWhatsAppNumber = $twilioWhatsAppNumber;
+            // Normaliser le numéro WhatsApp : enlever le préfixe "whatsapp:" s'il existe
+            $this->twilioWhatsAppNumber = $this->normalizeWhatsAppNumber($twilioWhatsAppNumber);
             
             $mode = $this->useTemplates ? 'templates (production)' : 'messages libres (sandbox/dev)';
-            $this->logger->info("WhatsApp Service activé en mode: $mode");
+            $this->logger->info("WhatsApp Service activé en mode: $mode", [
+                'whatsapp_number' => $this->twilioWhatsAppNumber
+            ]);
         } else {
             $this->twilioClient = null;
             $this->twilioWhatsAppNumber = '';
@@ -60,28 +63,54 @@ class WhatsAppService
             // Format du numéro : +33XXXXXXXXX
             $formattedNumber = $this->formatPhoneNumber($to);
             
+            $fromAddress = "whatsapp:$this->twilioWhatsAppNumber";
+            $toAddress = "whatsapp:$formattedNumber";
+            
             $this->logger->info('Envoi message WhatsApp', [
-                'to' => $formattedNumber,
-                'message' => $message
+                'from' => $fromAddress,
+                'to' => $toAddress,
+                'message_preview' => substr($message, 0, 100) . (strlen($message) > 100 ? '...' : '')
             ]);
 
             $message = $this->twilioClient->messages->create(
-                "whatsapp:$formattedNumber", // To
+                $toAddress,
                 [
-                    'from' => "whatsapp:$this->twilioWhatsAppNumber",
+                    'from' => $fromAddress,
                     'body' => $message
                 ]
             );
 
             $this->logger->info('Message WhatsApp envoyé avec succès', [
                 'sid' => $message->sid,
-                'to' => $formattedNumber
+                'status' => $message->status,
+                'from' => $fromAddress,
+                'to' => $toAddress
             ]);
 
             return true;
+        } catch (\Twilio\Exceptions\RestException $e) {
+            $responseContent = null;
+            try {
+                $response = method_exists($e, 'getResponse') ? $e->getResponse() : null;
+                $responseContent = $response && method_exists($response, 'getContent') ? $response->getContent() : null;
+            } catch (\Exception $ex) {
+                // Ignore errors when trying to get response
+            }
+            
+            $this->logger->error('Erreur Twilio envoi WhatsApp', [
+                'error_code' => $e->getCode(),
+                'error_message' => $e->getMessage(),
+                'error_status' => method_exists($e, 'getStatusCode') ? $e->getStatusCode() : null,
+                'from' => "whatsapp:$this->twilioWhatsAppNumber",
+                'to' => $to,
+                'twilio_response' => $responseContent
+            ]);
+            return false;
         } catch (\Exception $e) {
-            $this->logger->error('Erreur envoi WhatsApp', [
+            $this->logger->error('Erreur générale envoi WhatsApp', [
                 'error' => $e->getMessage(),
+                'error_class' => get_class($e),
+                'from' => "whatsapp:$this->twilioWhatsAppNumber",
                 'to' => $to
             ]);
             return false;
@@ -104,17 +133,20 @@ class WhatsAppService
 
         try {
             $formattedNumber = $this->formatPhoneNumber($to);
+            $fromAddress = "whatsapp:$this->twilioWhatsAppNumber";
+            $toAddress = "whatsapp:$formattedNumber";
             
             $this->logger->info('Envoi template WhatsApp', [
-                'to' => $formattedNumber,
+                'from' => $fromAddress,
+                'to' => $toAddress,
                 'template' => $templateName,
                 'parameters' => $parameters
             ]);
 
             $message = $this->twilioClient->messages->create(
-                "whatsapp:$formattedNumber",
+                $toAddress,
                 [
-                    'from' => "whatsapp:$this->twilioWhatsAppNumber",
+                    'from' => $fromAddress,
                     'contentSid' => $templateName,
                     'contentVariables' => json_encode($parameters)
                 ]
@@ -122,14 +154,37 @@ class WhatsAppService
 
             $this->logger->info('Template WhatsApp envoyé avec succès', [
                 'sid' => $message->sid,
-                'to' => $formattedNumber,
+                'status' => $message->status,
+                'from' => $fromAddress,
+                'to' => $toAddress,
                 'template' => $templateName
             ]);
 
             return true;
+        } catch (\Twilio\Exceptions\RestException $e) {
+            $responseContent = null;
+            try {
+                $response = method_exists($e, 'getResponse') ? $e->getResponse() : null;
+                $responseContent = $response && method_exists($response, 'getContent') ? $response->getContent() : null;
+            } catch (\Exception $ex) {
+                // Ignore errors when trying to get response
+            }
+            
+            $this->logger->error('Erreur Twilio envoi template WhatsApp', [
+                'error_code' => $e->getCode(),
+                'error_message' => $e->getMessage(),
+                'error_status' => method_exists($e, 'getStatusCode') ? $e->getStatusCode() : null,
+                'from' => "whatsapp:$this->twilioWhatsAppNumber",
+                'to' => $to,
+                'template' => $templateName,
+                'twilio_response' => $responseContent
+            ]);
+            return false;
         } catch (\Exception $e) {
-            $this->logger->error('Erreur envoi template WhatsApp', [
+            $this->logger->error('Erreur générale envoi template WhatsApp', [
                 'error' => $e->getMessage(),
+                'error_class' => get_class($e),
+                'from' => "whatsapp:$this->twilioWhatsAppNumber",
                 'to' => $to,
                 'template' => $templateName
             ]);
@@ -219,6 +274,16 @@ class WhatsAppService
             $message = $this->buildAdminNotificationMessage($reservationData);
             return $this->sendMessage($adminPhoneNumber, $message);
         }
+    }
+
+    /**
+     * Normalise le numéro WhatsApp en enlevant le préfixe "whatsapp:" s'il existe
+     */
+    private function normalizeWhatsAppNumber(string $number): string
+    {
+        // Enlever le préfixe "whatsapp:" s'il existe (insensible à la casse)
+        $normalized = preg_replace('/^whatsapp:/i', '', trim($number));
+        return $normalized;
     }
 
     /**
@@ -361,5 +426,40 @@ class WhatsAppService
         $message .= "\n⚡ *Action requise dans le dashboard admin*";
 
         return $message;
+    }
+
+    /**
+     * Vérifie la configuration Twilio et retourne des informations de diagnostic
+     * Utile pour le débogage des problèmes de configuration
+     */
+    public function getConfigurationStatus(): array
+    {
+        $status = [
+            'enabled' => $this->isEnabled,
+            'whatsapp_number' => $this->twilioWhatsAppNumber,
+            'from_address' => $this->isEnabled ? "whatsapp:{$this->twilioWhatsAppNumber}" : null,
+            'use_templates' => $this->useTemplates,
+            'mode' => $this->useTemplates ? 'production (templates)' : 'sandbox/dev (free messages)'
+        ];
+
+        if ($this->isEnabled) {
+            // Vérifications supplémentaires
+            $status['checks'] = [
+                'number_format' => $this->isValidPhoneNumber($this->twilioWhatsAppNumber),
+                'number_starts_with_plus' => str_starts_with($this->twilioWhatsAppNumber, '+'),
+                'is_sandbox_number' => str_contains($this->twilioWhatsAppNumber, '+14155238886')
+            ];
+        }
+
+        return $status;
+    }
+
+    /**
+     * Vérifie si un numéro de téléphone est au format valide (E.164)
+     */
+    private function isValidPhoneNumber(string $number): bool
+    {
+        // Format E.164: commence par + suivi de 1-15 chiffres
+        return preg_match('/^\+[1-9]\d{1,14}$/', $number) === 1;
     }
 }
