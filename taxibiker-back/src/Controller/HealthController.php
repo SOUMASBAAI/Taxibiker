@@ -228,6 +228,104 @@ class HealthController extends AbstractController
         ]);
     }
 
+    #[Route('/whatsapp/check-number', name: 'whatsapp_check_number', methods: ['GET'])]
+    public function checkWhatsAppNumber(): JsonResponse
+    {
+        if (!$this->whatsAppService) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => 'WhatsApp service not available'
+            ], Response::HTTP_SERVICE_UNAVAILABLE);
+        }
+
+        try {
+            $status = $this->whatsAppService->getConfigurationStatus();
+            $whatsappNumber = $status['whatsapp_number'] ?? null;
+            
+            if (!$whatsappNumber) {
+                return new JsonResponse([
+                    'status' => 'error',
+                    'message' => 'WhatsApp number not configured'
+                ]);
+            }
+
+            // Tenter de vérifier le statut du numéro via Twilio API
+            $accountSid = $_ENV['TWILIO_ACCOUNT_SID'] ?? null;
+            $authToken = $_ENV['TWILIO_AUTH_TOKEN'] ?? null;
+            
+            if (!$accountSid || !$authToken) {
+                return new JsonResponse([
+                    'status' => 'error',
+                    'message' => 'Twilio credentials not configured',
+                    'whatsapp_number' => $whatsappNumber
+                ]);
+            }
+
+            try {
+                $client = new \Twilio\Rest\Client($accountSid, $authToken);
+                
+                // Vérifier les numéros de téléphone dans le compte
+                $incomingNumbers = $client->incomingPhoneNumbers->read([], 20);
+                $numberFound = false;
+                $numberInfo = null;
+                
+                foreach ($incomingNumbers as $number) {
+                    if ($number->phoneNumber === $whatsappNumber) {
+                        $numberFound = true;
+                        $numberInfo = [
+                            'phone_number' => $number->phoneNumber,
+                            'friendly_name' => $number->friendlyName,
+                            'status' => 'found_in_account',
+                            'capabilities' => [
+                                'sms' => $number->capabilities['sms'] ?? false,
+                                'voice' => $number->capabilities['voice'] ?? false,
+                                'mms' => $number->capabilities['mms'] ?? false,
+                            ]
+                        ];
+                        break;
+                    }
+                }
+                
+                return new JsonResponse([
+                    'status' => 'ok',
+                    'whatsapp_number' => $whatsappNumber,
+                    'number_found_in_account' => $numberFound,
+                    'number_info' => $numberInfo,
+                    'instructions' => [
+                        'to_activate_whatsapp' => [
+                            '1' => 'Go to Twilio Console → Phone Numbers → Manage → Active numbers',
+                            '2' => "Click on $whatsappNumber",
+                            '3' => 'Go to "Messaging" tab',
+                            '4' => 'Enable/Check "WhatsApp" option',
+                            '5' => 'Or go to Messaging → Try it out → Send a WhatsApp message',
+                            '6' => 'Or go to Messaging → Senders → WhatsApp senders and add the number'
+                        ]
+                    ]
+                ]);
+                
+            } catch (\Exception $e) {
+                return new JsonResponse([
+                    'status' => 'error',
+                    'message' => 'Error checking number status',
+                    'error' => $e->getMessage(),
+                    'whatsapp_number' => $whatsappNumber,
+                    'instructions' => [
+                        '1' => 'Go to Twilio Console → Phone Numbers → Manage → Active numbers',
+                        '2' => "Find and click on $whatsappNumber",
+                        '3' => 'Make sure WhatsApp is enabled in the Messaging tab'
+                    ]
+                ]);
+            }
+            
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => 'Error checking WhatsApp configuration',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
     #[Route('/logs/whatsapp', name: 'whatsapp_logs', methods: ['GET'])]
     public function viewWhatsAppLogs(): JsonResponse
     {
@@ -265,6 +363,75 @@ class HealthController extends AbstractController
             'last_modified' => date('c', filemtime($logFile)),
             'lines' => array_map('trim', $lastLines)
         ]);
+    }
+
+    #[Route('/whatsapp/check-number', name: 'whatsapp_check_number', methods: ['GET'])]
+    public function checkWhatsAppNumber(): JsonResponse
+    {
+        if (!$this->whatsAppService) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => 'WhatsApp service not available'
+            ], Response::HTTP_SERVICE_UNAVAILABLE);
+        }
+
+        try {
+            $status = $this->whatsAppService->getConfigurationStatus();
+            $whatsappNumber = $status['whatsapp_number'] ?? null;
+            
+            if (!$whatsappNumber) {
+                return new JsonResponse([
+                    'status' => 'error',
+                    'message' => 'WhatsApp number not configured'
+                ]);
+            }
+
+            // Instructions pour activer le numéro dans Twilio Console
+            return new JsonResponse([
+                'status' => 'ok',
+                'whatsapp_number' => $whatsappNumber,
+                'instructions_to_activate' => [
+                    'method_1' => [
+                        'title' => 'Via Phone Numbers',
+                        'steps' => [
+                            '1. Go to Twilio Console → Phone Numbers → Manage → Active numbers',
+                            '2. Click on ' . $whatsappNumber,
+                            '3. Go to "Messaging" tab',
+                            '4. Enable/Check "WhatsApp" option',
+                            '5. Save changes'
+                        ]
+                    ],
+                    'method_2' => [
+                        'title' => 'Via Messaging Settings',
+                        'steps' => [
+                            '1. Go to Messaging → Try it out → Send a WhatsApp message',
+                            '2. Or go to Messaging → Senders → WhatsApp senders',
+                            '3. Check if ' . $whatsappNumber . ' appears in the list',
+                            '4. If not, click "Add WhatsApp Sender" or "Request WhatsApp Access"'
+                        ]
+                    ],
+                    'method_3' => [
+                        'title' => 'If number is not compatible with WhatsApp',
+                        'steps' => [
+                            '1. Go to Phone Numbers → Buy a number',
+                            '2. Search for a WhatsApp-compatible number',
+                            '3. Select "Messaging" and "WhatsApp" capabilities',
+                            '4. Purchase the number',
+                            '5. Update TWILIO_WHATSAPP_NUMBER in your .env file'
+                        ]
+                    ]
+                ],
+                'check_url' => 'https://console.twilio.com/us1/develop/sms/try-it-out/whatsapp-learn',
+                'note' => 'After activating the number in Twilio Console, the error 63007 should disappear'
+            ]);
+            
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => 'Error checking WhatsApp configuration',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     private function checkDatabase(): array

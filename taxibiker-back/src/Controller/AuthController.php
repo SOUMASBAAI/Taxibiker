@@ -159,6 +159,7 @@ class AuthController extends AbstractController
 
     /**
      * Demande de réinitialisation de mot de passe
+     * Fonctionne pour tous les utilisateurs, y compris les administrateurs (ROLE_ADMIN)
      */
     #[Route('/forgot-password', name: 'forgot_password', methods: ['POST'])]
     public function forgotPassword(Request $request): JsonResponse
@@ -182,6 +183,9 @@ class AuthController extends AbstractController
                 'message' => 'Si cet email existe dans notre système, vous recevrez un lien de réinitialisation.'
             ]);
         }
+
+        // Vérifier si l'utilisateur est un admin (pour logging/info)
+        $isAdmin = in_array('ROLE_ADMIN', $user->getRoles());
 
         try {
             // Supprimer les anciens tokens de cet utilisateur
@@ -212,11 +216,14 @@ class AuthController extends AbstractController
 
                 if (!$emailSent) {
                     // Log l'erreur mais continue le processus pour des raisons de sécurité
-                    error_log('Failed to send password reset email to: ' . $user->getEmail());
+                    error_log('Failed to send password reset email to: ' . $user->getEmail() . ($isAdmin ? ' (ADMIN)' : ''));
+                } else {
+                    // Log pour traçabilité (particulièrement important pour les admins)
+                    error_log('Password reset email sent to: ' . $user->getEmail() . ($isAdmin ? ' (ADMIN)' : ''));
                 }
             } catch (\Exception $emailException) {
                 // Log l'erreur mais continue le processus pour des raisons de sécurité
-                error_log('Exception while sending password reset email: ' . $emailException->getMessage());
+                error_log('Exception while sending password reset email to: ' . $user->getEmail() . ($isAdmin ? ' (ADMIN)' : '') . ' - ' . $emailException->getMessage());
             }
 
             return $this->json([
@@ -232,6 +239,7 @@ class AuthController extends AbstractController
 
     /**
      * Vérification de la validité d'un token de réinitialisation
+     * Fonctionne pour tous les utilisateurs, y compris les administrateurs (ROLE_ADMIN)
      */
     #[Route('/reset-password/verify', name: 'verify_reset_token', methods: ['POST'])]
     public function verifyResetToken(Request $request): JsonResponse
@@ -250,17 +258,22 @@ class AuthController extends AbstractController
             ], Response::HTTP_BAD_REQUEST);
         }
 
+        $user = $resetToken->getUser();
+        $isAdmin = in_array('ROLE_ADMIN', $user->getRoles());
+
         return $this->json([
             'valid' => true,
             'user' => [
-                'email' => $resetToken->getUser()->getEmail(),
-                'firstname' => $resetToken->getUser()->getFirstName()
+                'email' => $user->getEmail(),
+                'firstname' => $user->getFirstName(),
+                'isAdmin' => $isAdmin
             ]
         ]);
     }
 
     /**
      * Réinitialisation effective du mot de passe
+     * Fonctionne pour tous les utilisateurs, y compris les administrateurs (ROLE_ADMIN)
      */
     #[Route('/reset-password', name: 'reset_password', methods: ['POST'])]
     public function resetPassword(Request $request): JsonResponse
@@ -288,6 +301,7 @@ class AuthController extends AbstractController
 
         try {
             $user = $resetToken->getUser();
+            $isAdmin = in_array('ROLE_ADMIN', $user->getRoles());
 
             // Hasher le nouveau mot de passe
             $hashedPassword = $this->passwordHasher->hashPassword($user, $data['password']);
@@ -298,11 +312,18 @@ class AuthController extends AbstractController
 
             $this->entityManager->flush();
 
+            // Log pour traçabilité (particulièrement important pour les admins)
+            error_log('Password reset completed for: ' . $user->getEmail() . ($isAdmin ? ' (ADMIN)' : ''));
+
             // Envoyer email de confirmation
-            $this->emailService->sendPasswordChangedConfirmation(
-                $user->getEmail(),
-                $user->getFirstName()
-            );
+            try {
+                $this->emailService->sendPasswordChangedConfirmation(
+                    $user->getEmail(),
+                    $user->getFirstName()
+                );
+            } catch (\Exception $emailException) {
+                error_log('Exception while sending password changed confirmation to: ' . $user->getEmail() . ($isAdmin ? ' (ADMIN)' : '') . ' - ' . $emailException->getMessage());
+            }
 
             // Nettoyer les tokens expirés
             $this->passwordResetTokenRepository->cleanupExpiredTokens();
@@ -314,6 +335,81 @@ class AuthController extends AbstractController
         } catch (\Exception $e) {
             return $this->json([
                 'error' => 'Erreur lors de la réinitialisation: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Créer un compte administrateur
+     * Note: Actuellement accessible publiquement (voir security.yaml)
+     */
+    #[Route('/admin/register', name: 'admin_register', methods: ['POST'])]
+    public function registerAdmin(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        // Validation des données
+        if (!isset($data['firstname'], $data['lastname'], $data['email'], $data['password'], $data['phone'])) {
+            return $this->json(['error' => 'Données manquantes'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Vérifier si l'email existe déjà
+        if ($this->userRepository->findOneBy(['email' => $data['email']])) {
+            return $this->json(['error' => 'Un compte existe déjà avec cet email'], Response::HTTP_CONFLICT);
+        }
+
+        // Validation de l'email
+        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            return $this->json(['error' => 'Email invalide'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Validation du mot de passe (min 12 caractères, majuscule, minuscule, chiffre, caractère spécial)
+        if (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{12,}$/', $data['password'])) {
+            return $this->json([
+                'error' => 'Mot de passe invalide : min. 12 caractères, majuscule, minuscule, chiffre et caractère spécial.'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Validation du téléphone
+        if (!preg_match('/^[0-9]{10,15}$/', $data['phone'])) {
+            return $this->json(['error' => 'Téléphone invalide (10 à 15 chiffres uniquement)'], Response::HTTP_BAD_REQUEST);
+        }
+
+        try {
+            $user = new User();
+            $user->setFirstName($data['firstname']);
+            $user->setLastName($data['lastname']);
+            $user->setEmail($data['email']);
+            $user->setPhoneNumber($data['phone']);
+            // Créer avec le rôle admin
+            $user->setRoles(['ROLE_ADMIN', 'ROLE_USER']);
+
+            // Hasher le mot de passe
+            $hashedPassword = $this->passwordHasher->hashPassword($user, $data['password']);
+            $user->setPassword($hashedPassword);
+
+            $this->entityManager->persist($user);
+            $this->entityManager->flush();
+
+            // Générer le token JWT
+            $token = $this->jwtManager->create($user);
+
+            return $this->json([
+                'message' => 'Compte administrateur créé avec succès',
+                'token' => $token,
+                'user' => [
+                    'id' => $user->getId(),
+                    'email' => $user->getEmail(),
+                    'firstname' => $user->getFirstName(),
+                    'lastname' => $user->getLastName(),
+                    'phone' => $user->getPhoneNumber(),
+                    'roles' => $user->getRoles()
+                ]
+            ], Response::HTTP_CREATED);
+
+        } catch (\Exception $e) {
+            return $this->json([
+                'error' => 'Erreur lors de la création du compte administrateur: ' . $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }

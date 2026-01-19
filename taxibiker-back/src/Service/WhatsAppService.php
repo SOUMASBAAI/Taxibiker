@@ -40,19 +40,34 @@ class WhatsAppService
         
         $this->logToFile('Service enabled: ' . ($this->isEnabled ? 'OUI' : 'NON'));
         
-        // Déterminer si on utilise les templates (production) ou messages libres (sandbox/dev)
-        $this->useTemplates = $appEnv === 'prod' && !str_contains($twilioWhatsAppNumber ?? '', '+14155238886');
-        
         if ($this->isEnabled) {
             $this->twilioClient = new Client($twilioAccountSid, $twilioAuthToken);
             // Normaliser le numéro WhatsApp : enlever le préfixe "whatsapp:" s'il existe
-            $this->twilioWhatsAppNumber = $this->normalizeWhatsAppNumber($twilioWhatsAppNumber);
-            error_log('Numéro WhatsApp normalisé: ' . $this->twilioWhatsAppNumber);
+            $normalizedNumber = $this->normalizeWhatsAppNumber($twilioWhatsAppNumber);
+            
+            // Vérifier si le numéro est le sandbox Twilio
+            $isSandbox = str_contains($normalizedNumber, '+14155238886');
+            
+            // En mode production, si le numéro n'est pas le sandbox, utiliser les templates
+            // Sinon, utiliser les messages libres (sandbox/dev)
+            $this->useTemplates = $appEnv === 'prod' && !$isSandbox;
+            
+            $this->twilioWhatsAppNumber = $normalizedNumber;
+            $this->logToFile('Numéro WhatsApp normalisé: ' . $this->twilioWhatsAppNumber);
+            $this->logToFile('Is Sandbox: ' . ($isSandbox ? 'OUI' : 'NON'));
+            
+            if ($isSandbox) {
+                $this->logToFile('ATTENTION: Vous utilisez le numéro sandbox Twilio');
+                $this->logToFile('Pour la production, vous devez avoir un numéro WhatsApp approuvé');
+                $this->logToFile('IMPORTANT: Les destinataires doivent rejoindre le sandbox en envoyant le code JOIN');
+            }
             
             $mode = $this->useTemplates ? 'templates (production)' : 'messages libres (sandbox/dev)';
             $this->logger->info("WhatsApp Service activé en mode: $mode", [
                 'whatsapp_number' => $this->twilioWhatsAppNumber
             ]);
+            
+            $this->logToFile("Mode: $mode");
         } else {
             $this->twilioClient = null;
             $this->twilioWhatsAppNumber = '';
