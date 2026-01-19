@@ -405,9 +405,49 @@ const AddReservationModal = ({
     }));
   };
 
-  // Google Places API functions
+  // Google Places API functions - Get suggestions for autocomplete (same as ReservationPage)
+  const getSuggestions = async (query) => {
+    if (!query.trim()) return [];
+
+    try {
+      const response = await fetch(
+        `https://places.googleapis.com/v1/places:autocomplete`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": "AIzaSyCw8oN9_Ms4FVHRtuP5fyy120s18_DUCSo",
+            "X-Goog-FieldMask":
+              "suggestions.placePrediction.place,suggestions.placePrediction.text",
+          },
+          body: JSON.stringify({
+            input: query,
+            languageCode: "fr",
+            regionCode: "FR",
+            includedPrimaryTypes: [
+              "establishment",
+              "street_address",
+              "route",
+              "locality",
+              "administrative_area_level_1",
+            ],
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.suggestions?.slice(0, 5) || [];
+      }
+    } catch (error) {
+      console.error("Erreur lors de la recherche de suggestions:", error);
+    }
+    return [];
+  };
+
+  // Search place and set final address (same as ReservationPage)
   const searchPlace = async (query, type) => {
-    if (!query || query.length < 3) return;
+    if (!query.trim()) return;
 
     try {
       const response = await fetch(
@@ -422,89 +462,128 @@ const AddReservationModal = ({
           },
           body: JSON.stringify({
             textQuery: query,
+            maxResultCount: 1,
             languageCode: "fr",
+            regionCode: "FR",
           }),
         }
       );
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Places searchText error:", errorText);
-        return;
-      }
+      if (response.ok) {
+        const data = await response.json();
+        if (data.places && data.places[0]) {
+          const place = data.places[0];
+          const location = {
+            latitude: place.location.latitude,
+            longitude: place.location.longitude,
+          };
+          // Use formattedAddress (same as ReservationPage)
+          const address = place.formattedAddress;
 
-      const data = await response.json();
-      return data.places || [];
+          if (type === "from") {
+            setForm((prev) => ({ ...prev, from: address }));
+            setFromLocation(location);
+            setShowFromSuggestions(false);
+          } else if (type === "to") {
+            setForm((prev) => ({ ...prev, to: address }));
+            setToLocation(location);
+            setShowToSuggestions(false);
+          } else if (type === "stop") {
+            setForm((prev) => ({ ...prev, stop: address }));
+            setStopLocation(location);
+            setShowStopSuggestions(false);
+          }
+        }
+      } else {
+        const errText = await response.text();
+        console.error("Places searchText error:", errText);
+      }
     } catch (error) {
-      console.error("Error searching places:", error);
-      return [];
+      console.error("Erreur lors de la recherche de lieu:", error);
     }
   };
 
-  const handleFromChange = async (e) => {
+  const [searchTimeouts, setSearchTimeouts] = useState({});
+
+  const handleFromChange = (e) => {
     const value = e.target.value;
     setForm((prev) => ({ ...prev, from: value }));
     setFromLocation(null);
+    setShowFromSuggestions(value.length > 2);
 
-    if (value.length >= 3) {
-      const suggestions = await searchPlace(value, "from");
-      setFromSuggestions(suggestions || []);
-      setShowFromSuggestions(true);
-    } else {
-      setFromSuggestions([]);
-      setShowFromSuggestions(false);
+    // Clear existing timeout
+    if (searchTimeouts.from) {
+      clearTimeout(searchTimeouts.from);
     }
+
+    // Set new timeout for suggestions (same as ReservationPage)
+    const timeout = setTimeout(async () => {
+      if (value.length > 2) {
+        const suggestions = await getSuggestions(value);
+        setFromSuggestions(suggestions);
+      } else {
+        setFromSuggestions([]);
+        setShowFromSuggestions(false);
+      }
+    }, 300);
+
+    setSearchTimeouts((prev) => ({ ...prev, from: timeout }));
   };
 
-  const handleToChange = async (e) => {
+  const handleToChange = (e) => {
     const value = e.target.value;
     setForm((prev) => ({ ...prev, to: value }));
     setToLocation(null);
+    setShowToSuggestions(value.length > 2);
 
-    if (value.length >= 3) {
-      const suggestions = await searchPlace(value, "to");
-      setToSuggestions(suggestions || []);
-      setShowToSuggestions(true);
-    } else {
-      setToSuggestions([]);
-      setShowToSuggestions(false);
+    if (searchTimeouts.to) {
+      clearTimeout(searchTimeouts.to);
     }
+
+    const timeout = setTimeout(async () => {
+      if (value.length > 2) {
+        const suggestions = await getSuggestions(value);
+        setToSuggestions(suggestions);
+      } else {
+        setToSuggestions([]);
+        setShowToSuggestions(false);
+      }
+    }, 300);
+
+    setSearchTimeouts((prev) => ({ ...prev, to: timeout }));
   };
 
-  const handleStopChange = async (e) => {
+  const handleStopChange = (e) => {
     const value = e.target.value;
     setForm((prev) => ({ ...prev, stop: value }));
     setStopLocation(null);
+    setShowStopSuggestions(value.length > 2);
 
-    if (value.length >= 3) {
-      const suggestions = await searchPlace(value, "stop");
-      setStopSuggestions(suggestions || []);
-      setShowStopSuggestions(true);
-    } else {
-      setStopSuggestions([]);
-      setShowStopSuggestions(false);
+    if (searchTimeouts.stop) {
+      clearTimeout(searchTimeouts.stop);
     }
+
+    const timeout = setTimeout(async () => {
+      if (value.length > 2) {
+        const suggestions = await getSuggestions(value);
+        setStopSuggestions(suggestions);
+      } else {
+        setStopSuggestions([]);
+        setShowStopSuggestions(false);
+      }
+    }, 300);
+
+    setSearchTimeouts((prev) => ({ ...prev, stop: timeout }));
   };
 
   const selectSuggestion = (suggestion, type) => {
-    // Use displayName.text if available (better for predefined routes matching), 
-    // otherwise fall back to formattedAddress
-    const address = suggestion.displayName?.text || suggestion.formattedAddress;
-    const location = suggestion.location;
-
-    if (type === "from") {
-      setForm((prev) => ({ ...prev, from: address }));
-      setFromLocation(location);
-      setShowFromSuggestions(false);
-    } else if (type === "to") {
-      setForm((prev) => ({ ...prev, to: address }));
-      setToLocation(location);
-      setShowToSuggestions(false);
-    } else if (type === "stop") {
-      setForm((prev) => ({ ...prev, stop: address }));
-      setStopLocation(location);
-      setShowStopSuggestions(false);
-    }
+    // Same logic as ReservationPage: use displayName.text from autocomplete, then searchPlace sets formattedAddress
+    const address =
+      suggestion.placePrediction?.text?.text ||
+      suggestion.placePrediction?.place?.formattedAddress;
+    
+    // Now call searchPlace to get the final formattedAddress (same as ReservationPage)
+    searchPlace(address, type);
   };
 
   // Calculate distance for zone pricing (when zones are unknown)
@@ -994,12 +1073,15 @@ const AddReservationModal = ({
                       className="p-3 hover:bg-gray-600 cursor-pointer border-b border-gray-600 last:border-b-0"
                     >
                       <div className="text-white font-medium">
-                        {suggestion.displayName?.text ||
-                          suggestion.formattedAddress}
+                        {suggestion.placePrediction?.text?.text}
                       </div>
-                      <div className="text-gray-300 text-sm">
-                        {suggestion.formattedAddress}
-                      </div>
+                      {suggestion.placePrediction?.place?.formattedAddress &&
+                        suggestion.placePrediction?.place?.formattedAddress !==
+                          suggestion.placePrediction?.text?.text && (
+                          <div className="text-gray-300 text-sm">
+                            {suggestion.placePrediction.place.formattedAddress}
+                          </div>
+                        )}
                     </div>
                   ))}
                 </div>
@@ -1041,12 +1123,15 @@ const AddReservationModal = ({
                         className="p-3 hover:bg-gray-600 cursor-pointer border-b border-gray-600 last:border-b-0"
                       >
                         <div className="text-white font-medium">
-                          {suggestion.displayName?.text ||
-                            suggestion.formattedAddress}
+                          {suggestion.placePrediction?.text?.text}
                         </div>
-                        <div className="text-gray-300 text-sm">
-                          {suggestion.formattedAddress}
-                        </div>
+                        {suggestion.placePrediction?.place?.formattedAddress &&
+                          suggestion.placePrediction?.place?.formattedAddress !==
+                            suggestion.placePrediction?.text?.text && (
+                            <div className="text-gray-300 text-sm">
+                              {suggestion.placePrediction.place.formattedAddress}
+                            </div>
+                          )}
                       </div>
                     ))}
                   </div>
@@ -1112,12 +1197,15 @@ const AddReservationModal = ({
                             className="p-3 hover:bg-gray-600 cursor-pointer border-b border-gray-600 last:border-b-0"
                           >
                             <div className="text-white font-medium">
-                              {suggestion.displayName?.text ||
-                                suggestion.formattedAddress}
+                              {suggestion.placePrediction?.text?.text}
                             </div>
-                            <div className="text-gray-300 text-sm">
-                              {suggestion.formattedAddress}
-                            </div>
+                            {suggestion.placePrediction?.place?.formattedAddress &&
+                              suggestion.placePrediction?.place?.formattedAddress !==
+                                suggestion.placePrediction?.text?.text && (
+                                <div className="text-gray-300 text-sm">
+                                  {suggestion.placePrediction.place.formattedAddress}
+                                </div>
+                              )}
                           </div>
                         ))}
                       </div>
