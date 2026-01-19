@@ -187,18 +187,62 @@ ${invoiceData.email}`;
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-[#222] p-6 rounded-2xl w-full max-w-lg text-white">
+      <div className="bg-[#222] p-6 rounded-2xl w-full max-w-lg text-white max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-bold mb-4">Détails de la réservation</h2>
 
-        <div className="grid grid-cols-2 gap-4 mb-3">
-          <div>
-            <span className="font-semibold">Date :</span>
-            <p className="text-gray-300">{reservation.date}</p>
+        {/* Informations du client */}
+        <div className="mb-6 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+          <h3 className="text-lg font-semibold mb-3 text-orange-400">
+            Informations du client
+          </h3>
+          <div className="space-y-2">
+            <div>
+              <span className="font-semibold text-sm text-gray-400">Nom complet :</span>
+              <p className="text-gray-200 mt-1">
+                {reservation.firstname} {reservation.lastname}
+              </p>
+            </div>
+            <div>
+              <span className="font-semibold text-sm text-gray-400">Email :</span>
+              <p className="text-gray-200 mt-1 break-words">
+                {reservation.email || "Non renseigné"}
+              </p>
+            </div>
+            <div>
+              <span className="font-semibold text-sm text-gray-400">Téléphone :</span>
+              <p className="text-gray-200 mt-1">
+                {reservation.phone || "Non renseigné"}
+              </p>
+            </div>
           </div>
-          <div>
-            <span className="font-semibold">Heure :</span>
-            <p className="text-gray-300">{reservation.time}</p>
+        </div>
+
+        {/* Informations de la réservation */}
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold mb-3 text-orange-400">
+            Informations de la réservation
+          </h3>
+          
+          <div className="grid grid-cols-2 gap-4 mb-3">
+            <div>
+              <span className="font-semibold">Date :</span>
+              <p className="text-gray-300">{reservation.date}</p>
+            </div>
+            <div>
+              <span className="font-semibold">Heure :</span>
+              <p className="text-gray-300">{reservation.time}</p>
+            </div>
           </div>
+        </div>
+
+        <div className="mb-3">
+          <span className="font-semibold">Départ :</span>
+          <p className="text-gray-300">{reservation.from}</p>
+        </div>
+
+        <div className="mb-3">
+          <span className="font-semibold">Arrivée :</span>
+          <p className="text-gray-300">{reservation.to}</p>
         </div>
 
         <div className="mb-3">
