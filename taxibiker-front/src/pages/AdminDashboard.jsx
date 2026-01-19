@@ -1279,40 +1279,6 @@ export default function AdminDashboard() {
     setShowAddModal(true);
   };
 
-  const fetchReservations = async () => {
-    try {
-      const response = await authService.authenticatedRequest(
-        buildApiUrl("admin/reservations")
-      );
-      const data = await response.json();
-
-      if (data.success) {
-        // Convert API format to component format
-        const formattedReservations = data.reservations.map((res) => ({
-          id: res.id,
-          firstname: res.client.name.split(" ")[0],
-          lastname: res.client.name.split(" ").slice(1).join(" "),
-          email: res.client.email,
-          phone: res.client.phone,
-          date: res.date.split(" ")[0],
-          time: res.date.split(" ")[1]?.substring(0, 5) || "00:00",
-          from: res.departure,
-          to: res.arrival,
-          status: mapApiStatusToUi(res.status),
-          luggage: res.excessBaggage,
-          stop: res.stop || "",
-          price: parseFloat(res.price),
-          type: res.type,
-          hours: res.hours || null,
-        }));
-
-        setReservations(formattedReservations);
-      }
-    } catch (error) {
-      console.error("Erreur lors du chargement des réservations:", error);
-    }
-  };
-
   const handleAddReservation = async (newReservation) => {
     try {
       // Envoyer la réservation au backend
