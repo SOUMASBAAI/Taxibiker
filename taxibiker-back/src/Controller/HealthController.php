@@ -62,6 +62,47 @@ class HealthController extends AbstractController
         ]);
     }
 
+    /**
+     * Endpoint temporaire pour vider le cache en production
+     * À SUPPRIMER après utilisation
+     */
+    #[Route('/clear-cache', name: 'clear_cache', methods: ['GET', 'POST'])]
+    public function clearCache(): JsonResponse
+    {
+        try {
+            // Exécuter la commande de cache:clear via exec
+            $output = [];
+            $returnVar = 0;
+            
+            $command = 'php ' . $this->getParameter('kernel.project_dir') . '/bin/console cache:clear --env=prod --no-debug 2>&1';
+            exec($command, $output, $returnVar);
+            
+            if ($returnVar === 0) {
+                return new JsonResponse([
+                    'status' => 'ok',
+                    'message' => 'Cache vidé avec succès',
+                    'output' => implode("\n", $output),
+                    'timestamp' => date('c')
+                ]);
+            } else {
+                return new JsonResponse([
+                    'status' => 'error',
+                    'message' => 'Erreur lors du vidage du cache',
+                    'output' => implode("\n", $output),
+                    'return_code' => $returnVar,
+                    'timestamp' => date('c')
+                ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            }
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => 'Exception lors du vidage du cache',
+                'error' => $e->getMessage(),
+                'timestamp' => date('c')
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
     #[Route('/whatsapp', name: 'whatsapp', methods: ['GET'])]
     public function whatsappCheck(): JsonResponse
     {
@@ -363,75 +404,6 @@ class HealthController extends AbstractController
             'last_modified' => date('c', filemtime($logFile)),
             'lines' => array_map('trim', $lastLines)
         ]);
-    }
-
-    #[Route('/whatsapp/check-number', name: 'whatsapp_check_number', methods: ['GET'])]
-    public function checkWhatsAppNumber(): JsonResponse
-    {
-        if (!$this->whatsAppService) {
-            return new JsonResponse([
-                'status' => 'error',
-                'message' => 'WhatsApp service not available'
-            ], Response::HTTP_SERVICE_UNAVAILABLE);
-        }
-
-        try {
-            $status = $this->whatsAppService->getConfigurationStatus();
-            $whatsappNumber = $status['whatsapp_number'] ?? null;
-            
-            if (!$whatsappNumber) {
-                return new JsonResponse([
-                    'status' => 'error',
-                    'message' => 'WhatsApp number not configured'
-                ]);
-            }
-
-            // Instructions pour activer le numéro dans Twilio Console
-            return new JsonResponse([
-                'status' => 'ok',
-                'whatsapp_number' => $whatsappNumber,
-                'instructions_to_activate' => [
-                    'method_1' => [
-                        'title' => 'Via Phone Numbers',
-                        'steps' => [
-                            '1. Go to Twilio Console → Phone Numbers → Manage → Active numbers',
-                            '2. Click on ' . $whatsappNumber,
-                            '3. Go to "Messaging" tab',
-                            '4. Enable/Check "WhatsApp" option',
-                            '5. Save changes'
-                        ]
-                    ],
-                    'method_2' => [
-                        'title' => 'Via Messaging Settings',
-                        'steps' => [
-                            '1. Go to Messaging → Try it out → Send a WhatsApp message',
-                            '2. Or go to Messaging → Senders → WhatsApp senders',
-                            '3. Check if ' . $whatsappNumber . ' appears in the list',
-                            '4. If not, click "Add WhatsApp Sender" or "Request WhatsApp Access"'
-                        ]
-                    ],
-                    'method_3' => [
-                        'title' => 'If number is not compatible with WhatsApp',
-                        'steps' => [
-                            '1. Go to Phone Numbers → Buy a number',
-                            '2. Search for a WhatsApp-compatible number',
-                            '3. Select "Messaging" and "WhatsApp" capabilities',
-                            '4. Purchase the number',
-                            '5. Update TWILIO_WHATSAPP_NUMBER in your .env file'
-                        ]
-                    ]
-                ],
-                'check_url' => 'https://console.twilio.com/us1/develop/sms/try-it-out/whatsapp-learn',
-                'note' => 'After activating the number in Twilio Console, the error 63007 should disappear'
-            ]);
-            
-        } catch (\Exception $e) {
-            return new JsonResponse([
-                'status' => 'error',
-                'message' => 'Error checking WhatsApp configuration',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
     }
 
     private function checkDatabase(): array
