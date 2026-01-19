@@ -351,6 +351,7 @@ const AddReservationModal = ({
   const [clientSuggestions, setClientSuggestions] = useState([]);
   const [showClientSuggestions, setShowClientSuggestions] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
+  const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
 
   const fromRef = useRef(null);
   const toRef = useRef(null);
@@ -504,7 +505,7 @@ const AddReservationModal = ({
     }
   };
 
-  // Calculate distance and price
+  // Calculate distance for zone pricing (when zones are unknown)
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371; // Earth's radius in kilometers
     const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -519,63 +520,130 @@ const AddReservationModal = ({
     return R * c;
   };
 
-  const calculatePrice = () => {
+  // Calculate price using the same backend API as users
+  const calculatePrice = async () => {
     if (tripType === "classic") {
-      // Classic trip: departure to arrival
-      if (fromLocation && toLocation) {
-        const distance = calculateDistance(
-          fromLocation.latitude,
-          fromLocation.longitude,
-          toLocation.latitude,
-          toLocation.longitude
-        );
+      // Classic trip: need both departure and arrival addresses
+      if (!form.from || !form.to || !fromLocation || !toLocation) {
+        setForm((prev) => ({ ...prev, price: 0 }));
+        setIsCalculatingPrice(false);
+        return;
+      }
 
-        // Base price calculation (similar to ReservationPage)
-        let basePrice = 0;
-        if (distance <= 5) {
-          basePrice = 15;
-        } else if (distance <= 10) {
-          basePrice = 25;
-        } else if (distance <= 20) {
-          basePrice = 35;
-        } else if (distance <= 30) {
-          basePrice = 45;
-        } else {
-          basePrice = 55;
+      // Calculate distance for zone pricing
+      const distance = calculateDistance(
+        fromLocation.latitude,
+        fromLocation.longitude,
+        toLocation.latitude,
+        toLocation.longitude
+      );
+
+      setIsCalculatingPrice(true);
+      try {
+        // Combine date and time
+        const pickupDateTime = new Date(selectedDate);
+        if (form.time) {
+          const [hours, minutes] = form.time.split(":");
+          pickupDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
         }
 
-        // Add luggage fee if applicable
-        const luggageFee = form.luggage ? 15 : 0;
-        const stopFee = stopLocation ? 10 : 0;
+        const requestData = {
+          departure: form.from,
+          arrival: form.to,
+          mode: "classic",
+          datetime: pickupDateTime.toISOString(),
+          distance: distance,
+          stops: stopLocation ? 1 : 0,
+          excessBaggage: form.luggage ? 1 : 0,
+        };
 
-        const totalPrice = basePrice + luggageFee + stopFee;
-        setForm((prev) => ({ ...prev, price: totalPrice }));
-      } else {
-        // If no valid locations, set price to 0
+        const response = await fetch(buildApiUrl("pricing/calculate"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestData),
+        });
+
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          setForm((prev) => ({
+            ...prev,
+            price: Math.round(result.data.totalPrice * 100) / 100, // Round to 2 decimals
+          }));
+        } else {
+          console.error("Pricing error:", result.error);
+          setForm((prev) => ({ ...prev, price: 0 }));
+        }
+      } catch (error) {
+        console.error("Error calculating price:", error);
         setForm((prev) => ({ ...prev, price: 0 }));
+      } finally {
+        setIsCalculatingPrice(false);
       }
     } else {
-      // Time-based trip: departure + duration
-      if (fromLocation) {
-        // Base price: 20€ per hour
-        const basePrice = form.duration * 20;
-
-        // Add luggage fee if applicable
-        const luggageFee = form.luggage ? 15 : 0;
-        const stopFee = stopLocation ? 10 : 0;
-
-        const totalPrice = basePrice + luggageFee + stopFee;
-        setForm((prev) => ({ ...prev, price: totalPrice }));
-      } else {
-        // If no departure location, set price to 0
+      // Time-based trip: need departure address and duration
+      if (!form.from || !fromLocation) {
         setForm((prev) => ({ ...prev, price: 0 }));
+        setIsCalculatingPrice(false);
+        return;
+      }
+
+      setIsCalculatingPrice(true);
+      try {
+        // Combine date and time
+        const pickupDateTime = new Date(selectedDate);
+        if (form.time) {
+          const [hours, minutes] = form.time.split(":");
+          pickupDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        }
+
+        const requestData = {
+          departure: form.from,
+          arrival: form.from, // For hourly mode, arrival = departure
+          mode: "hourly",
+          datetime: pickupDateTime.toISOString(),
+          hours: form.duration || 2,
+          excessBaggage: form.luggage ? 1 : 0,
+        };
+
+        const response = await fetch(buildApiUrl("pricing/calculate"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestData),
+        });
+
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          setForm((prev) => ({
+            ...prev,
+            price: Math.round(result.data.totalPrice * 100) / 100, // Round to 2 decimals
+          }));
+        } else {
+          console.error("Pricing error:", result.error);
+          setForm((prev) => ({ ...prev, price: 0 }));
+        }
+      } catch (error) {
+        console.error("Error calculating price:", error);
+        setForm((prev) => ({ ...prev, price: 0 }));
+      } finally {
+        setIsCalculatingPrice(false);
       }
     }
   };
 
   // Recalculate price when form fields change
   useEffect(() => {
-    calculatePrice();
+    // Add small delay to avoid too many API calls
+    const timer = setTimeout(() => {
+      calculatePrice();
+    }, 300);
+    
+    return () => clearTimeout(timer);
   }, [
     fromLocation,
     toLocation,
@@ -583,6 +651,10 @@ const AddReservationModal = ({
     form.luggage,
     tripType,
     form.duration,
+    form.from,
+    form.to,
+    form.time,
+    selectedDate,
   ]);
 
   // Click outside to close suggestions
@@ -1069,8 +1141,10 @@ const AddReservationModal = ({
               }`}
             />
             <p className="text-xs text-gray-400 mt-1">
-              {form.price > 0
-                ? "Prix calculé automatiquement selon la distance et les options"
+              {isCalculatingPrice
+                ? "⏳ Calcul en cours..."
+                : form.price > 0
+                ? "Prix calculé automatiquement selon les zones et options (week-end, fériés, urgences inclus)"
                 : "⚠️ Sélectionnez des adresses depuis les suggestions pour calculer le prix"}
             </p>
           </div>
