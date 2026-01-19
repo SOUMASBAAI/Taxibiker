@@ -629,33 +629,65 @@ const AddReservationModal = ({
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Vérifier que le prix est calculé
+    if (form.price === 0 || form.price === null) {
+      alert("Veuillez sélectionner des adresses valides pour calculer le prix");
+      return;
+    }
+
+    // Vérifier que les locations sont définies pour le calcul de prix
+    if (tripType === "classic" && (!fromLocation || !toLocation)) {
+      alert("Veuillez sélectionner des adresses valides depuis les suggestions");
+      return;
+    }
+    
+    if (tripType === "time" && !fromLocation) {
+      alert("Veuillez sélectionner une adresse de départ valide depuis les suggestions");
+      return;
+    }
+
     const newReservation = {
-      id: Date.now(), // Simple ID generation
+      id: Date.now(), // Simple ID generation (sera remplacé par l'ID du backend)
       ...form,
       date: selectedDate.toISOString().split("T")[0],
       price: parseInt(form.price) || 0,
-      to: tripType === "classic" ? form.to : `Durée: ${form.duration}h`,
+      to: tripType === "classic" ? form.to : form.from, // Pour time-based, to = from
       tripType: tripType,
       duration: tripType === "time" ? form.duration : null,
     };
-    onAddReservation(newReservation);
-    setForm({
-      firstname: "",
-      lastname: "",
-      email: "",
-      phone: "",
-      time: "",
-      from: "",
-      to: "",
-      luggage: false,
-      stop: "",
-      price: 0,
-      status: "Acceptée",
-      duration: 1,
-    });
-    onClose();
+    
+    try {
+      // Appeler la fonction qui envoie au backend
+      await onAddReservation(newReservation);
+      
+      // Réinitialiser le formulaire seulement après succès
+      setForm({
+        firstname: "",
+        lastname: "",
+        email: "",
+        phone: "",
+        time: "",
+        from: "",
+        to: "",
+        luggage: false,
+        stop: "",
+        price: 0,
+        status: "Acceptée",
+        duration: 1,
+      });
+      setFromLocation(null);
+      setToLocation(null);
+      setStopLocation(null);
+      setSelectedClient(null);
+      setClientSearch("");
+      onClose();
+    } catch (error) {
+      // Erreur déjà gérée dans handleAddReservation
+      // Ne pas fermer le modal en cas d'erreur
+    }
   };
 
   if (!isOpen) return null;
@@ -856,7 +888,7 @@ const AddReservationModal = ({
 
           <div ref={fromRef} className="relative">
             <label className="block text-sm font-medium text-gray-300 mb-1">
-              Départ
+              Départ {fromLocation && <span className="text-green-400 text-xs">✓</span>}
             </label>
             <input
               type="text"
@@ -865,9 +897,18 @@ const AddReservationModal = ({
               onChange={handleFromChange}
               onFocus={() => setShowFromSuggestions(true)}
               placeholder="Adresse de départ"
-              className="w-full p-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:border-orange-500 focus:outline-none"
+              className={`w-full p-2 rounded-lg text-white border focus:outline-none ${
+                fromLocation
+                  ? "bg-gray-700 border-green-500 focus:border-green-400"
+                  : "bg-gray-700 border-gray-600 focus:border-orange-500"
+              }`}
               required
             />
+            {!fromLocation && form.from && (
+              <p className="text-xs text-yellow-400 mt-1">
+                ⚠️ Sélectionnez une adresse depuis les suggestions ci-dessus
+              </p>
+            )}
             {showFromSuggestions &&
               fromSuggestions &&
               fromSuggestions.length > 0 && (
@@ -894,7 +935,7 @@ const AddReservationModal = ({
           {tripType === "classic" ? (
             <div ref={toRef} className="relative">
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Arrivée
+                Arrivée {toLocation && <span className="text-green-400 text-xs">✓</span>}
               </label>
               <input
                 type="text"
@@ -903,9 +944,18 @@ const AddReservationModal = ({
                 onChange={handleToChange}
                 onFocus={() => setShowToSuggestions(true)}
                 placeholder="Adresse d'arrivée"
-                className="w-full p-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:border-orange-500 focus:outline-none"
+                className={`w-full p-2 rounded-lg text-white border focus:outline-none ${
+                  toLocation
+                    ? "bg-gray-700 border-green-500 focus:border-green-400"
+                    : "bg-gray-700 border-gray-600 focus:border-orange-500"
+                }`}
                 required
               />
+              {!toLocation && form.to && (
+                <p className="text-xs text-yellow-400 mt-1">
+                  ⚠️ Sélectionnez une adresse depuis les suggestions ci-dessus
+                </p>
+              )}
               {showToSuggestions &&
                 toSuggestions &&
                 toSuggestions.length > 0 && (
@@ -1012,10 +1062,16 @@ const AddReservationModal = ({
               name="price"
               value={form.price}
               readOnly
-              className="w-full p-2 rounded-lg bg-gray-600 text-white border border-gray-500 cursor-not-allowed"
+              className={`w-full p-2 rounded-lg text-white border cursor-not-allowed ${
+                form.price > 0
+                  ? "bg-green-600/20 border-green-500"
+                  : "bg-gray-600 border-gray-500"
+              }`}
             />
             <p className="text-xs text-gray-400 mt-1">
-              Prix calculé automatiquement selon la distance et les options
+              {form.price > 0
+                ? "Prix calculé automatiquement selon la distance et les options"
+                : "⚠️ Sélectionnez des adresses depuis les suggestions pour calculer le prix"}
             </p>
           </div>
 
@@ -1093,6 +1149,41 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchReservations = async () => {
+    try {
+      const response = await authService.authenticatedRequest(
+        buildApiUrl("admin/reservations")
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        // Convert API format to component format
+        const formattedReservations = data.reservations.map((res) => ({
+          id: res.id,
+          firstname: res.client.name.split(" ")[0],
+          lastname: res.client.name.split(" ").slice(1).join(" "),
+          email: res.client.email,
+          phone: res.client.phone,
+          date: res.date.split(" ")[0],
+          time: res.date.split(" ")[1]?.substring(0, 5) || "00:00",
+          from: res.departure,
+          to: res.arrival,
+          status: mapApiStatusToUi(res.status),
+          luggage: res.excessBaggage,
+          stop: res.stop || "",
+          price: parseFloat(res.price),
+          type: res.type,
+          hours: res.hours || null,
+        }));
+
+        setReservations(formattedReservations);
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des réservations:", error);
+      throw error;
+    }
+  };
+
   // Fetch real reservations from API
   useEffect(() => {
     const user = authService.getUser();
@@ -1102,35 +1193,9 @@ export default function AdminDashboard() {
     }
     setAuthChecked(true);
 
-    const fetchReservations = async () => {
+    const loadReservations = async () => {
       try {
-        const response = await authService.authenticatedRequest(
-          buildApiUrl("admin/reservations")
-        );
-        const data = await response.json();
-
-        if (data.success) {
-          // Convert API format to component format
-          const formattedReservations = data.reservations.map((res) => ({
-            id: res.id,
-            firstname: res.client.name.split(" ")[0],
-            lastname: res.client.name.split(" ").slice(1).join(" "),
-            email: res.client.email,
-            phone: res.client.phone,
-            date: res.date.split(" ")[0],
-            time: res.date.split(" ")[1]?.substring(0, 5) || "00:00",
-            from: res.departure,
-            to: res.arrival,
-            status: mapApiStatusToUi(res.status),
-            luggage: res.excessBaggage,
-            stop: res.stop || "",
-            price: parseFloat(res.price),
-            type: res.type,
-            hours: res.hours || null,
-          }));
-
-          setReservations(formattedReservations);
-        }
+        await fetchReservations();
       } catch (error) {
         console.error("Erreur lors du chargement des réservations:", error);
         // En cas d'erreur, garder les données mockées pour le développement
@@ -1139,7 +1204,7 @@ export default function AdminDashboard() {
       }
     };
 
-    fetchReservations();
+    loadReservations();
   }, []);
 
   // Réservations
@@ -1214,20 +1279,82 @@ export default function AdminDashboard() {
     setShowAddModal(true);
   };
 
-  const handleAddReservation = (newReservation) => {
-    setReservations((prev) => {
-      const updatedReservations = [...prev, newReservation];
+  const fetchReservations = async () => {
+    try {
+      const response = await authService.authenticatedRequest(
+        buildApiUrl("admin/reservations")
+      );
+      const data = await response.json();
 
-      // Sort reservations by date and time
-      return updatedReservations.sort((a, b) => {
-        // First sort by date
-        if (a.date !== b.date) {
-          return a.date.localeCompare(b.date);
+      if (data.success) {
+        // Convert API format to component format
+        const formattedReservations = data.reservations.map((res) => ({
+          id: res.id,
+          firstname: res.client.name.split(" ")[0],
+          lastname: res.client.name.split(" ").slice(1).join(" "),
+          email: res.client.email,
+          phone: res.client.phone,
+          date: res.date.split(" ")[0],
+          time: res.date.split(" ")[1]?.substring(0, 5) || "00:00",
+          from: res.departure,
+          to: res.arrival,
+          status: mapApiStatusToUi(res.status),
+          luggage: res.excessBaggage,
+          stop: res.stop || "",
+          price: parseFloat(res.price),
+          type: res.type,
+          hours: res.hours || null,
+        }));
+
+        setReservations(formattedReservations);
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des réservations:", error);
+    }
+  };
+
+  const handleAddReservation = async (newReservation) => {
+    try {
+      // Envoyer la réservation au backend
+      const response = await authService.authenticatedRequest(
+        buildApiUrl("admin/reservations"),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            firstname: newReservation.firstname,
+            lastname: newReservation.lastname,
+            email: newReservation.email,
+            phone: newReservation.phone,
+            date: newReservation.date,
+            time: newReservation.time,
+            from: newReservation.from,
+            to: newReservation.tripType === "classic" ? newReservation.to : newReservation.from,
+            stop: newReservation.stop || null,
+            luggage: newReservation.luggage || false,
+            price: newReservation.price,
+            tripType: newReservation.tripType || "classic",
+            duration: newReservation.duration || null,
+          }),
         }
-        // Then sort by time within the same date
-        return a.time.localeCompare(b.time);
-      });
-    });
+      );
+
+      const result = await response.json();
+
+      if (result.success && result.reservation) {
+        // Recharger toutes les réservations depuis le backend
+        await fetchReservations();
+      } else {
+        alert("Erreur lors de la création de la réservation: " + (result.error || "Erreur inconnue"));
+        throw new Error(result.error || "Erreur inconnue");
+      }
+    } catch (error) {
+      console.error("Erreur lors de la création de la réservation:", error);
+      alert("Erreur lors de la création de la réservation: " + error.message);
+      throw error; // Re-throw pour que handleSubmit puisse gérer l'erreur
+    }
   };
 
   // Tri réservation
