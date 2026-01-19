@@ -487,7 +487,9 @@ const AddReservationModal = ({
   };
 
   const selectSuggestion = (suggestion, type) => {
-    const address = suggestion.formattedAddress;
+    // Use displayName.text if available (better for predefined routes matching), 
+    // otherwise fall back to formattedAddress
+    const address = suggestion.displayName?.text || suggestion.formattedAddress;
     const location = suggestion.location;
 
     if (type === "from") {
