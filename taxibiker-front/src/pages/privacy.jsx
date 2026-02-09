@@ -1,3 +1,4 @@
+
 const Privacy = () => {
   return (
     <div className="max-w-6xl mx-auto px-6 py-16 text-gray-200 text-sm leading-relaxed">

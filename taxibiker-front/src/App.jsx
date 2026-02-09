@@ -12,6 +12,7 @@ import AdminReservations from "./pages/AdminReservations.jsx";
 import ReservationPage from "./pages/ReservationPage.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
+import Privacy from "./pages/privacy.jsx";
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
       <Route path="/reservation" element={<ReservationPage />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+       <Route path="/privacy" element={<Privacy />} />
     </Routes>
   );
 }

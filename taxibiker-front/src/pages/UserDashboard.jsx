@@ -421,7 +421,10 @@ export default function UserDashboard() {
             </div>
 
             <div className="bg-white/10 backdrop-blur-md text-white p-4 rounded-2xl mb-6 text-center text-sm sm:text-base font-medium">
-              Les modifications s'appliquent uniquement à l'heure, la date et le
+              Une fois votre réservation effectuée, elle est en attente de confirmation par Taxi Biker Paris.
+Vous recevrez un message de confirmation dès que votre réservation aura été validée.
+
+Les modifications s'appliquent uniquement à l'heure, la date et le
               bagage. Pour changer de trajet, merci de refaire une réservation
               car le tarif varie selon le trajet.
             </div>

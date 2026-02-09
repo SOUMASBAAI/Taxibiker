@@ -1,4 +1,5 @@
 import { Mail, Phone, Instagram } from "lucide-react";
+import { Link } from "react-router-dom"; // <-- IMPORT IMPORTANT
 
 export default function Footer() {
   return (
@@ -18,14 +19,14 @@ export default function Footer() {
           <h3 className="font-semibold mb-2">Informations</h3>
           <ul className="space-y-1 text-gray-300 text-sm">
             <li>
-              <a href="/privacy" className="hover:text-[#DD5212] transition">
+              <Link to="/privacy" className="hover:text-[#DD5212] transition">
                 Politique de confidentialité
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="/mentions-legales" className="hover:text-[#DD5212] transition">
+              <Link to="/mentions-legales" className="hover:text-[#DD5212] transition">
                 Mentions légales
-              </a>
+              </Link>
             </li>
           </ul>
         </div>
