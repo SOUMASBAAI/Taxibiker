@@ -10,6 +10,8 @@ import casqueImg from "../assets/equipements/casque.png";
 import gantsImg from "../assets/equipements/gants.png";
 import giletImg from "../assets/equipements/gilet.png";
 import vesteImg from "../assets/equipements/veste.png";
+import jupeImg from "../assets/equipements/tabki.png";
+import charlotteImg from "../assets/equipements/charlotte.png";
 import taxiImage2 from "../assets/taxi_team.jpg";
 import {
   FaShieldAlt,
@@ -121,8 +123,8 @@ export default function HomePage() {
       title: "Charlotte hygiène",
       description:
         "Charlotte jetable pour maintenir une hygiène irréprochable.",
-      imageUrl:
-        "https://images.unsplash.com/photo-1588776814546-9df7f7c4889d?auto=format&fit=crop&w=800&q=80",
+      imageUrl:charlotteImg,
+       
     },
     {
       title: "Gel hydroalcoolique",
@@ -132,8 +134,8 @@ export default function HomePage() {
     {
       title: "Jupe thermique",
       description: "Jupe thermique pour maintenir une température agréable.",
-      imageUrl:
-        "https://images.unsplash.com/photo-1605902711622-cfb43c443f13?auto=format&fit=crop&w=800&q=80",
+      imageUrl:jupeImg,
+        
     },
     {
       title: "Gants de protection",

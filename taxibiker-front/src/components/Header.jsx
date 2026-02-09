@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { FaBars, FaTimes, FaMotorcycle, FaUser } from "react-icons/fa";
+import logo from "@/assets/equipements/logo.jpeg";
+// ou ../../assets/equipements/logo.jpeg selon ton arborescence
+
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -53,9 +56,13 @@ export default function Header() {
                   href="/"
                   className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent hover:from-orange-400 hover:to-orange-300 transition-all duration-300"
                 >
-                  TAXIBIKERPARIS
+                 <img
+      src={logo}
+      alt="Taxi Biker Paris"
+      className="h-12 w-auto object-contain hover:scale-105 transition-transform duration-300"
+    />
                 </a>
-                <p className="text-xs text-gray-400 -mt-1">Transport Premium</p>
+                
               </div>
             </div>
 
