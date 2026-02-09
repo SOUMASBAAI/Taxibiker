@@ -11,7 +11,8 @@ import {
   FaCalendarCheck,
 } from "react-icons/fa";
 import authService from "../../services/authService";
-import logo from "../assets/equipements/logo.jpeg";
+import logo from "../../assets/equipements/logo.jpeg";
+
 
 
 export default function DashboardHeader({ onNavigate }) {
