@@ -9,7 +9,7 @@ export default function Footer() {
         <div>
           <h2 className="text-xl font-bold mb-2"> TAXIBIKERPARIS</h2>
           <p className="text-gray-400 text-sm italic">
-            "Votre trajet, notre priorité "
+            "Votre trajet, notre priorité"
           </p>
         </div>
 
@@ -64,7 +64,7 @@ export default function Footer() {
       <div className="border-t border-white/10 mt-8 pt-4 text-center text-xs text-gray-400">
         <p>© 2026 TAXIBIKERPARIS. Tous droits réservés.</p>
         <p className="mt-1">
-          Ce site est une réalisation de <span className="text-white font-semibold">ISAKODE</span>.
+          Ce site est une réalisation de  <span className="text-white font-semibold">ISAKODE</span>.
         </p>
       </div>
     </footer>
