@@ -61,7 +61,7 @@ export default function Header() {
                  <img
       src={logo}
       alt="Taxi Biker Paris"
-      className="h-12 w-auto object-contain hover:scale-105 transition-transform duration-300"
+      className="h-20 w-auto object-contain hover:scale-105 transition-transform duration-300"
     />
                 </a>
                 
