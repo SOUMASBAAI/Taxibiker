@@ -18,8 +18,8 @@ export default function Footer() {
           <h3 className="font-semibold mb-2">Informations</h3>
           <ul className="space-y-1 text-gray-300 text-sm">
             <li>
-              <a href="/conditions" className="hover:text-[#DD5212] transition">
-                Conditions d’utilisation
+              <a href="/privacy" className="hover:text-[#DD5212] transition">
+                Politique de confidentialité
               </a>
             </li>
             <li>

@@ -11,6 +11,8 @@ import {
   FaCalendarCheck,
 } from "react-icons/fa";
 import authService from "../../services/authService";
+import logo from "../assets/equipements/logo.jpeg";
+
 
 export default function DashboardHeader({ onNavigate }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -45,13 +47,18 @@ export default function DashboardHeader({ onNavigate }) {
         <div className="flex items-center justify-between h-20">
           {/* Logo et Branding */}
           <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-2.5 rounded-xl shadow-lg">
-              <FaMotorcycle className="text-white text-xl" />
-            </div>
+            
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                TAXIBIKER
-              </h1>
+              <a
+                                href="/"
+                                className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent hover:from-orange-400 hover:to-orange-300 transition-all duration-300"
+                              >
+                               <img
+                    src={logo}
+                    alt="Taxi Biker Paris"
+                    className="h-20 w-auto object-contain hover:scale-105 transition-transform duration-300"
+                  />
+                              </a>
               <p className="text-xs text-gray-400 -mt-1">Dashboard</p>
             </div>
           </div>
