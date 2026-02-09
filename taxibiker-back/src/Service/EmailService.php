@@ -17,7 +17,7 @@ class EmailService
         private Environment $twig,
         LoggerInterface $logger,
         private string $fromEmail = 'contact@taxibikerparis.com',
-        private string $fromName = 'TaxiBiker'
+        private string $fromName = 'TaxiBikerParis'
     ) {
         $this->logger = $logger;
         $this->isEnabled = $mailer !== null;
