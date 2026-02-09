@@ -351,6 +351,7 @@ const AddReservationModal = ({
   const [clientSuggestions, setClientSuggestions] = useState([]);
   const [showClientSuggestions, setShowClientSuggestions] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
+  const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
 
   const fromRef = useRef(null);
   const toRef = useRef(null);
@@ -404,9 +405,49 @@ const AddReservationModal = ({
     }));
   };
 
-  // Google Places API functions
+  // Google Places API functions - Get suggestions for autocomplete (same as ReservationPage)
+  const getSuggestions = async (query) => {
+    if (!query.trim()) return [];
+
+    try {
+      const response = await fetch(
+        `https://places.googleapis.com/v1/places:autocomplete`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": "AIzaSyCw8oN9_Ms4FVHRtuP5fyy120s18_DUCSo",
+            "X-Goog-FieldMask":
+              "suggestions.placePrediction.place,suggestions.placePrediction.text",
+          },
+          body: JSON.stringify({
+            input: query,
+            languageCode: "fr",
+            regionCode: "FR",
+            includedPrimaryTypes: [
+              "establishment",
+              "street_address",
+              "route",
+              "locality",
+              "administrative_area_level_1",
+            ],
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.suggestions?.slice(0, 5) || [];
+      }
+    } catch (error) {
+      console.error("Erreur lors de la recherche de suggestions:", error);
+    }
+    return [];
+  };
+
+  // Search place and set final address (same as ReservationPage)
   const searchPlace = async (query, type) => {
-    if (!query || query.length < 3) return;
+    if (!query.trim()) return;
 
     try {
       const response = await fetch(
@@ -421,90 +462,131 @@ const AddReservationModal = ({
           },
           body: JSON.stringify({
             textQuery: query,
+            maxResultCount: 1,
             languageCode: "fr",
+            regionCode: "FR",
           }),
         }
       );
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Places searchText error:", errorText);
-        return;
-      }
+      if (response.ok) {
+        const data = await response.json();
+        if (data.places && data.places[0]) {
+          const place = data.places[0];
+          const location = {
+            latitude: place.location.latitude,
+            longitude: place.location.longitude,
+          };
+          // Use formattedAddress (same as ReservationPage)
+          const address = place.formattedAddress;
 
-      const data = await response.json();
-      return data.places || [];
+          if (type === "from") {
+            setForm((prev) => ({ ...prev, from: address }));
+            setFromLocation(location);
+            setShowFromSuggestions(false);
+          } else if (type === "to") {
+            setForm((prev) => ({ ...prev, to: address }));
+            setToLocation(location);
+            setShowToSuggestions(false);
+          } else if (type === "stop") {
+            setForm((prev) => ({ ...prev, stop: address }));
+            setStopLocation(location);
+            setShowStopSuggestions(false);
+          }
+        }
+      } else {
+        const errText = await response.text();
+        console.error("Places searchText error:", errText);
+      }
     } catch (error) {
-      console.error("Error searching places:", error);
-      return [];
+      console.error("Erreur lors de la recherche de lieu:", error);
     }
   };
 
-  const handleFromChange = async (e) => {
+  const [searchTimeouts, setSearchTimeouts] = useState({});
+
+  const handleFromChange = (e) => {
     const value = e.target.value;
     setForm((prev) => ({ ...prev, from: value }));
     setFromLocation(null);
+    setShowFromSuggestions(value.length > 2);
 
-    if (value.length >= 3) {
-      const suggestions = await searchPlace(value, "from");
-      setFromSuggestions(suggestions || []);
-      setShowFromSuggestions(true);
-    } else {
-      setFromSuggestions([]);
-      setShowFromSuggestions(false);
+    // Clear existing timeout
+    if (searchTimeouts.from) {
+      clearTimeout(searchTimeouts.from);
     }
+
+    // Set new timeout for suggestions (same as ReservationPage)
+    const timeout = setTimeout(async () => {
+      if (value.length > 2) {
+        const suggestions = await getSuggestions(value);
+        setFromSuggestions(suggestions);
+      } else {
+        setFromSuggestions([]);
+        setShowFromSuggestions(false);
+      }
+    }, 300);
+
+    setSearchTimeouts((prev) => ({ ...prev, from: timeout }));
   };
 
-  const handleToChange = async (e) => {
+  const handleToChange = (e) => {
     const value = e.target.value;
     setForm((prev) => ({ ...prev, to: value }));
     setToLocation(null);
+    setShowToSuggestions(value.length > 2);
 
-    if (value.length >= 3) {
-      const suggestions = await searchPlace(value, "to");
-      setToSuggestions(suggestions || []);
-      setShowToSuggestions(true);
-    } else {
-      setToSuggestions([]);
-      setShowToSuggestions(false);
+    if (searchTimeouts.to) {
+      clearTimeout(searchTimeouts.to);
     }
+
+    const timeout = setTimeout(async () => {
+      if (value.length > 2) {
+        const suggestions = await getSuggestions(value);
+        setToSuggestions(suggestions);
+      } else {
+        setToSuggestions([]);
+        setShowToSuggestions(false);
+      }
+    }, 300);
+
+    setSearchTimeouts((prev) => ({ ...prev, to: timeout }));
   };
 
-  const handleStopChange = async (e) => {
+  const handleStopChange = (e) => {
     const value = e.target.value;
     setForm((prev) => ({ ...prev, stop: value }));
     setStopLocation(null);
+    setShowStopSuggestions(value.length > 2);
 
-    if (value.length >= 3) {
-      const suggestions = await searchPlace(value, "stop");
-      setStopSuggestions(suggestions || []);
-      setShowStopSuggestions(true);
-    } else {
-      setStopSuggestions([]);
-      setShowStopSuggestions(false);
+    if (searchTimeouts.stop) {
+      clearTimeout(searchTimeouts.stop);
     }
+
+    const timeout = setTimeout(async () => {
+      if (value.length > 2) {
+        const suggestions = await getSuggestions(value);
+        setStopSuggestions(suggestions);
+      } else {
+        setStopSuggestions([]);
+        setShowStopSuggestions(false);
+      }
+    }, 300);
+
+    setSearchTimeouts((prev) => ({ ...prev, stop: timeout }));
   };
 
   const selectSuggestion = (suggestion, type) => {
-    const address = suggestion.formattedAddress;
-    const location = suggestion.location;
-
-    if (type === "from") {
-      setForm((prev) => ({ ...prev, from: address }));
-      setFromLocation(location);
-      setShowFromSuggestions(false);
-    } else if (type === "to") {
-      setForm((prev) => ({ ...prev, to: address }));
-      setToLocation(location);
-      setShowToSuggestions(false);
-    } else if (type === "stop") {
-      setForm((prev) => ({ ...prev, stop: address }));
-      setStopLocation(location);
-      setShowStopSuggestions(false);
-    }
+    // Same logic as ReservationPage: use displayName.text from autocomplete, then searchPlace sets formattedAddress
+    const address =
+      suggestion.placePrediction?.text?.text ||
+      suggestion.placePrediction?.place?.formattedAddress;
+    
+    // Now call searchPlace to get the final formattedAddress (same as ReservationPage)
+    searchPlace(address, type);
   };
 
-  // Calculate distance and price
+  // Calculate distance for zone pricing (when zones are unknown)
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371; // Earth's radius in kilometers
     const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -519,63 +601,130 @@ const AddReservationModal = ({
     return R * c;
   };
 
-  const calculatePrice = () => {
+  // Calculate price using the same backend API as users
+  const calculatePrice = async () => {
     if (tripType === "classic") {
-      // Classic trip: departure to arrival
-      if (fromLocation && toLocation) {
-        const distance = calculateDistance(
-          fromLocation.latitude,
-          fromLocation.longitude,
-          toLocation.latitude,
-          toLocation.longitude
-        );
+      // Classic trip: need both departure and arrival addresses
+      if (!form.from || !form.to || !fromLocation || !toLocation) {
+        setForm((prev) => ({ ...prev, price: 0 }));
+        setIsCalculatingPrice(false);
+        return;
+      }
 
-        // Base price calculation (similar to ReservationPage)
-        let basePrice = 0;
-        if (distance <= 5) {
-          basePrice = 15;
-        } else if (distance <= 10) {
-          basePrice = 25;
-        } else if (distance <= 20) {
-          basePrice = 35;
-        } else if (distance <= 30) {
-          basePrice = 45;
-        } else {
-          basePrice = 55;
+      // Calculate distance for zone pricing
+      const distance = calculateDistance(
+        fromLocation.latitude,
+        fromLocation.longitude,
+        toLocation.latitude,
+        toLocation.longitude
+      );
+
+      setIsCalculatingPrice(true);
+      try {
+        // Combine date and time
+        const pickupDateTime = new Date(selectedDate);
+        if (form.time) {
+          const [hours, minutes] = form.time.split(":");
+          pickupDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
         }
 
-        // Add luggage fee if applicable
-        const luggageFee = form.luggage ? 15 : 0;
-        const stopFee = stopLocation ? 10 : 0;
+        const requestData = {
+          departure: form.from,
+          arrival: form.to,
+          mode: "classic",
+          datetime: pickupDateTime.toISOString(),
+          distance: distance,
+          stops: stopLocation ? 1 : 0,
+          excessBaggage: form.luggage ? 1 : 0,
+        };
 
-        const totalPrice = basePrice + luggageFee + stopFee;
-        setForm((prev) => ({ ...prev, price: totalPrice }));
-      } else {
-        // If no valid locations, set price to 0
+        const response = await fetch(buildApiUrl("pricing/calculate"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestData),
+        });
+
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          setForm((prev) => ({
+            ...prev,
+            price: Math.round(result.data.totalPrice * 100) / 100, // Round to 2 decimals
+          }));
+        } else {
+          console.error("Pricing error:", result.error);
+          setForm((prev) => ({ ...prev, price: 0 }));
+        }
+      } catch (error) {
+        console.error("Error calculating price:", error);
         setForm((prev) => ({ ...prev, price: 0 }));
+      } finally {
+        setIsCalculatingPrice(false);
       }
     } else {
-      // Time-based trip: departure + duration
-      if (fromLocation) {
-        // Base price: 20€ per hour
-        const basePrice = form.duration * 20;
-
-        // Add luggage fee if applicable
-        const luggageFee = form.luggage ? 15 : 0;
-        const stopFee = stopLocation ? 10 : 0;
-
-        const totalPrice = basePrice + luggageFee + stopFee;
-        setForm((prev) => ({ ...prev, price: totalPrice }));
-      } else {
-        // If no departure location, set price to 0
+      // Time-based trip: need departure address and duration
+      if (!form.from || !fromLocation) {
         setForm((prev) => ({ ...prev, price: 0 }));
+        setIsCalculatingPrice(false);
+        return;
+      }
+
+      setIsCalculatingPrice(true);
+      try {
+        // Combine date and time
+        const pickupDateTime = new Date(selectedDate);
+        if (form.time) {
+          const [hours, minutes] = form.time.split(":");
+          pickupDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        }
+
+        const requestData = {
+          departure: form.from,
+          arrival: form.from, // For hourly mode, arrival = departure
+          mode: "hourly",
+          datetime: pickupDateTime.toISOString(),
+          hours: form.duration || 2,
+          excessBaggage: form.luggage ? 1 : 0,
+        };
+
+        const response = await fetch(buildApiUrl("pricing/calculate"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestData),
+        });
+
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          setForm((prev) => ({
+            ...prev,
+            price: Math.round(result.data.totalPrice * 100) / 100, // Round to 2 decimals
+          }));
+        } else {
+          console.error("Pricing error:", result.error);
+          setForm((prev) => ({ ...prev, price: 0 }));
+        }
+      } catch (error) {
+        console.error("Error calculating price:", error);
+        setForm((prev) => ({ ...prev, price: 0 }));
+      } finally {
+        setIsCalculatingPrice(false);
       }
     }
   };
 
   // Recalculate price when form fields change
   useEffect(() => {
-    calculatePrice();
+    // Add small delay to avoid too many API calls
+    const timer = setTimeout(() => {
+      calculatePrice();
+    }, 300);
+    
+    return () => clearTimeout(timer);
   }, [
     fromLocation,
     toLocation,
@@ -583,6 +732,10 @@ const AddReservationModal = ({
     form.luggage,
     tripType,
     form.duration,
+    form.from,
+    form.to,
+    form.time,
+    selectedDate,
   ]);
 
   // Click outside to close suggestions
@@ -629,33 +782,65 @@ const AddReservationModal = ({
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Vérifier que le prix est calculé
+    if (form.price === 0 || form.price === null) {
+      alert("Veuillez sélectionner des adresses valides pour calculer le prix");
+      return;
+    }
+
+    // Vérifier que les locations sont définies pour le calcul de prix
+    if (tripType === "classic" && (!fromLocation || !toLocation)) {
+      alert("Veuillez sélectionner des adresses valides depuis les suggestions");
+      return;
+    }
+    
+    if (tripType === "time" && !fromLocation) {
+      alert("Veuillez sélectionner une adresse de départ valide depuis les suggestions");
+      return;
+    }
+
     const newReservation = {
-      id: Date.now(), // Simple ID generation
+      id: Date.now(), // Simple ID generation (sera remplacé par l'ID du backend)
       ...form,
       date: selectedDate.toISOString().split("T")[0],
       price: parseInt(form.price) || 0,
-      to: tripType === "classic" ? form.to : `Durée: ${form.duration}h`,
+      to: tripType === "classic" ? form.to : form.from, // Pour time-based, to = from
       tripType: tripType,
       duration: tripType === "time" ? form.duration : null,
     };
-    onAddReservation(newReservation);
-    setForm({
-      firstname: "",
-      lastname: "",
-      email: "",
-      phone: "",
-      time: "",
-      from: "",
-      to: "",
-      luggage: false,
-      stop: "",
-      price: 0,
-      status: "Acceptée",
-      duration: 1,
-    });
-    onClose();
+    
+    try {
+      // Appeler la fonction qui envoie au backend
+      await onAddReservation(newReservation);
+      
+      // Réinitialiser le formulaire seulement après succès
+      setForm({
+        firstname: "",
+        lastname: "",
+        email: "",
+        phone: "",
+        time: "",
+        from: "",
+        to: "",
+        luggage: false,
+        stop: "",
+        price: 0,
+        status: "Acceptée",
+        duration: 1,
+      });
+      setFromLocation(null);
+      setToLocation(null);
+      setStopLocation(null);
+      setSelectedClient(null);
+      setClientSearch("");
+      onClose();
+    } catch (error) {
+      // Erreur déjà gérée dans handleAddReservation
+      // Ne pas fermer le modal en cas d'erreur
+    }
   };
 
   if (!isOpen) return null;
@@ -856,7 +1041,7 @@ const AddReservationModal = ({
 
           <div ref={fromRef} className="relative">
             <label className="block text-sm font-medium text-gray-300 mb-1">
-              Départ
+              Départ {fromLocation && <span className="text-green-400 text-xs">✓</span>}
             </label>
             <input
               type="text"
@@ -865,9 +1050,18 @@ const AddReservationModal = ({
               onChange={handleFromChange}
               onFocus={() => setShowFromSuggestions(true)}
               placeholder="Adresse de départ"
-              className="w-full p-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:border-orange-500 focus:outline-none"
+              className={`w-full p-2 rounded-lg text-white border focus:outline-none ${
+                fromLocation
+                  ? "bg-gray-700 border-green-500 focus:border-green-400"
+                  : "bg-gray-700 border-gray-600 focus:border-orange-500"
+              }`}
               required
             />
+            {!fromLocation && form.from && (
+              <p className="text-xs text-yellow-400 mt-1">
+                ⚠️ Sélectionnez une adresse depuis les suggestions ci-dessus
+              </p>
+            )}
             {showFromSuggestions &&
               fromSuggestions &&
               fromSuggestions.length > 0 && (
@@ -879,12 +1073,15 @@ const AddReservationModal = ({
                       className="p-3 hover:bg-gray-600 cursor-pointer border-b border-gray-600 last:border-b-0"
                     >
                       <div className="text-white font-medium">
-                        {suggestion.displayName?.text ||
-                          suggestion.formattedAddress}
+                        {suggestion.placePrediction?.text?.text}
                       </div>
-                      <div className="text-gray-300 text-sm">
-                        {suggestion.formattedAddress}
-                      </div>
+                      {suggestion.placePrediction?.place?.formattedAddress &&
+                        suggestion.placePrediction?.place?.formattedAddress !==
+                          suggestion.placePrediction?.text?.text && (
+                          <div className="text-gray-300 text-sm">
+                            {suggestion.placePrediction.place.formattedAddress}
+                          </div>
+                        )}
                     </div>
                   ))}
                 </div>
@@ -894,7 +1091,7 @@ const AddReservationModal = ({
           {tripType === "classic" ? (
             <div ref={toRef} className="relative">
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Arrivée
+                Arrivée {toLocation && <span className="text-green-400 text-xs">✓</span>}
               </label>
               <input
                 type="text"
@@ -903,9 +1100,18 @@ const AddReservationModal = ({
                 onChange={handleToChange}
                 onFocus={() => setShowToSuggestions(true)}
                 placeholder="Adresse d'arrivée"
-                className="w-full p-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:border-orange-500 focus:outline-none"
+                className={`w-full p-2 rounded-lg text-white border focus:outline-none ${
+                  toLocation
+                    ? "bg-gray-700 border-green-500 focus:border-green-400"
+                    : "bg-gray-700 border-gray-600 focus:border-orange-500"
+                }`}
                 required
               />
+              {!toLocation && form.to && (
+                <p className="text-xs text-yellow-400 mt-1">
+                  ⚠️ Sélectionnez une adresse depuis les suggestions ci-dessus
+                </p>
+              )}
               {showToSuggestions &&
                 toSuggestions &&
                 toSuggestions.length > 0 && (
@@ -917,12 +1123,15 @@ const AddReservationModal = ({
                         className="p-3 hover:bg-gray-600 cursor-pointer border-b border-gray-600 last:border-b-0"
                       >
                         <div className="text-white font-medium">
-                          {suggestion.displayName?.text ||
-                            suggestion.formattedAddress}
+                          {suggestion.placePrediction?.text?.text}
                         </div>
-                        <div className="text-gray-300 text-sm">
-                          {suggestion.formattedAddress}
-                        </div>
+                        {suggestion.placePrediction?.place?.formattedAddress &&
+                          suggestion.placePrediction?.place?.formattedAddress !==
+                            suggestion.placePrediction?.text?.text && (
+                            <div className="text-gray-300 text-sm">
+                              {suggestion.placePrediction.place.formattedAddress}
+                            </div>
+                          )}
                       </div>
                     ))}
                   </div>
@@ -988,12 +1197,15 @@ const AddReservationModal = ({
                             className="p-3 hover:bg-gray-600 cursor-pointer border-b border-gray-600 last:border-b-0"
                           >
                             <div className="text-white font-medium">
-                              {suggestion.displayName?.text ||
-                                suggestion.formattedAddress}
+                              {suggestion.placePrediction?.text?.text}
                             </div>
-                            <div className="text-gray-300 text-sm">
-                              {suggestion.formattedAddress}
-                            </div>
+                            {suggestion.placePrediction?.place?.formattedAddress &&
+                              suggestion.placePrediction?.place?.formattedAddress !==
+                                suggestion.placePrediction?.text?.text && (
+                                <div className="text-gray-300 text-sm">
+                                  {suggestion.placePrediction.place.formattedAddress}
+                                </div>
+                              )}
                           </div>
                         ))}
                       </div>
@@ -1012,10 +1224,18 @@ const AddReservationModal = ({
               name="price"
               value={form.price}
               readOnly
-              className="w-full p-2 rounded-lg bg-gray-600 text-white border border-gray-500 cursor-not-allowed"
+              className={`w-full p-2 rounded-lg text-white border cursor-not-allowed ${
+                form.price > 0
+                  ? "bg-green-600/20 border-green-500"
+                  : "bg-gray-600 border-gray-500"
+              }`}
             />
             <p className="text-xs text-gray-400 mt-1">
-              Prix calculé automatiquement selon la distance et les options
+              {isCalculatingPrice
+                ? "⏳ Calcul en cours..."
+                : form.price > 0
+                ? "Prix calculé automatiquement selon les zones et options (week-end, fériés, urgences inclus)"
+                : "⚠️ Sélectionnez des adresses depuis les suggestions pour calculer le prix"}
             </p>
           </div>
 
@@ -1093,6 +1313,41 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchReservations = async () => {
+    try {
+      const response = await authService.authenticatedRequest(
+        buildApiUrl("admin/reservations")
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        // Convert API format to component format
+        const formattedReservations = data.reservations.map((res) => ({
+          id: res.id,
+          firstname: res.client.name.split(" ")[0],
+          lastname: res.client.name.split(" ").slice(1).join(" "),
+          email: res.client.email,
+          phone: res.client.phone,
+          date: res.date.split(" ")[0],
+          time: res.date.split(" ")[1]?.substring(0, 5) || "00:00",
+          from: res.departure,
+          to: res.arrival,
+          status: mapApiStatusToUi(res.status),
+          luggage: res.excessBaggage,
+          stop: res.stop || "",
+          price: parseFloat(res.price),
+          type: res.type,
+          hours: res.hours || null,
+        }));
+
+        setReservations(formattedReservations);
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des réservations:", error);
+      throw error;
+    }
+  };
+
   // Fetch real reservations from API
   useEffect(() => {
     const user = authService.getUser();
@@ -1102,35 +1357,9 @@ export default function AdminDashboard() {
     }
     setAuthChecked(true);
 
-    const fetchReservations = async () => {
+    const loadReservations = async () => {
       try {
-        const response = await authService.authenticatedRequest(
-          buildApiUrl("admin/reservations")
-        );
-        const data = await response.json();
-
-        if (data.success) {
-          // Convert API format to component format
-          const formattedReservations = data.reservations.map((res) => ({
-            id: res.id,
-            firstname: res.client.name.split(" ")[0],
-            lastname: res.client.name.split(" ").slice(1).join(" "),
-            email: res.client.email,
-            phone: res.client.phone,
-            date: res.date.split(" ")[0],
-            time: res.date.split(" ")[1]?.substring(0, 5) || "00:00",
-            from: res.departure,
-            to: res.arrival,
-            status: mapApiStatusToUi(res.status),
-            luggage: res.excessBaggage,
-            stop: res.stop || "",
-            price: parseFloat(res.price),
-            type: res.type,
-            hours: res.hours || null,
-          }));
-
-          setReservations(formattedReservations);
-        }
+        await fetchReservations();
       } catch (error) {
         console.error("Erreur lors du chargement des réservations:", error);
         // En cas d'erreur, garder les données mockées pour le développement
@@ -1139,7 +1368,7 @@ export default function AdminDashboard() {
       }
     };
 
-    fetchReservations();
+    loadReservations();
   }, []);
 
   // Réservations
@@ -1214,20 +1443,48 @@ export default function AdminDashboard() {
     setShowAddModal(true);
   };
 
-  const handleAddReservation = (newReservation) => {
-    setReservations((prev) => {
-      const updatedReservations = [...prev, newReservation];
-
-      // Sort reservations by date and time
-      return updatedReservations.sort((a, b) => {
-        // First sort by date
-        if (a.date !== b.date) {
-          return a.date.localeCompare(b.date);
+  const handleAddReservation = async (newReservation) => {
+    try {
+      // Envoyer la réservation au backend
+      const response = await authService.authenticatedRequest(
+        buildApiUrl("admin/reservations"),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            firstname: newReservation.firstname,
+            lastname: newReservation.lastname,
+            email: newReservation.email,
+            phone: newReservation.phone,
+            date: newReservation.date,
+            time: newReservation.time,
+            from: newReservation.from,
+            to: newReservation.tripType === "classic" ? newReservation.to : newReservation.from,
+            stop: newReservation.stop || null,
+            luggage: newReservation.luggage || false,
+            price: newReservation.price,
+            tripType: newReservation.tripType || "classic",
+            duration: newReservation.duration || null,
+          }),
         }
-        // Then sort by time within the same date
-        return a.time.localeCompare(b.time);
-      });
-    });
+      );
+
+      const result = await response.json();
+
+      if (result.success && result.reservation) {
+        // Recharger toutes les réservations depuis le backend
+        await fetchReservations();
+      } else {
+        alert("Erreur lors de la création de la réservation: " + (result.error || "Erreur inconnue"));
+        throw new Error(result.error || "Erreur inconnue");
+      }
+    } catch (error) {
+      console.error("Erreur lors de la création de la réservation:", error);
+      alert("Erreur lors de la création de la réservation: " + error.message);
+      throw error; // Re-throw pour que handleSubmit puisse gérer l'erreur
+    }
   };
 
   // Tri réservation

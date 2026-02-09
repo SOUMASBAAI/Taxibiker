@@ -6,6 +6,7 @@ use App\Entity\User;
 use App\Entity\ClassicReservation;
 use App\Entity\FlatRateBooking;
 use App\Repository\CreditRegularizationRepository;
+use App\Repository\UserRepository;
 use App\Service\WhatsAppService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -14,6 +15,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 #[Route('/api', name: 'api_')]
 class ReservationController extends AbstractController
@@ -22,7 +24,9 @@ class ReservationController extends AbstractController
         private EntityManagerInterface $entityManager,
         private CreditRegularizationRepository $creditRegularizationRepository,
         private WhatsAppService $whatsAppService,
-        private ParameterBagInterface $parameterBag
+        private ParameterBagInterface $parameterBag,
+        private UserRepository $userRepository,
+        private UserPasswordHasherInterface $passwordHasher
     ) {
     }
 
@@ -126,6 +130,125 @@ class ReservationController extends AbstractController
                     'status' => $reservation->getStatut(),
                     'type' => $mode,
                     'payment_method' => $paymentMethod
+                ]
+            ], Response::HTTP_CREATED);
+
+        } catch (\Exception $e) {
+            return $this->json([
+                'error' => 'Erreur lors de la création de la réservation: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Créer une réservation par l'admin pour un client
+     */
+    #[Route('/admin/reservations', name: 'admin_create_reservation', methods: ['POST'])]
+    public function createReservationByAdmin(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        // Validation des données
+        if (!isset($data['firstname'], $data['lastname'], $data['email'], $data['phone'], 
+                  $data['date'], $data['time'], $data['from'], $data['price'])) {
+            return $this->json(['error' => 'Données manquantes'], Response::HTTP_BAD_REQUEST);
+        }
+
+        try {
+            // Trouver ou créer le client
+            $client = $this->userRepository->findOneBy(['email' => $data['email']]);
+            
+            if (!$client) {
+                // Créer un nouveau client
+                $client = new User();
+                $client->setFirstName($data['firstname']);
+                $client->setLastName($data['lastname']);
+                $client->setEmail($data['email']);
+                $client->setPhoneNumber($data['phone']);
+                // Générer un mot de passe aléatoire (l'utilisateur pourra le réinitialiser)
+                $randomPassword = bin2hex(random_bytes(16));
+                $hashedPassword = $this->passwordHasher->hashPassword($client, $randomPassword);
+                $client->setPassword($hashedPassword);
+                $client->setRoles(['ROLE_USER']);
+                
+                $this->entityManager->persist($client);
+                $this->entityManager->flush();
+            } else {
+                // Mettre à jour les informations si nécessaire
+                if ($client->getFirstName() !== $data['firstname']) {
+                    $client->setFirstName($data['firstname']);
+                }
+                if ($client->getLastName() !== $data['lastname']) {
+                    $client->setLastName($data['lastname']);
+                }
+                if ($client->getPhoneNumber() !== $data['phone']) {
+                    $client->setPhoneNumber($data['phone']);
+                }
+            }
+
+            // Créer la date complète avec l'heure
+            $dateTimeString = $data['date'] . ' ' . $data['time'] . ':00';
+            $date = new \DateTime($dateTimeString);
+
+            // Déterminer le type de réservation
+            $tripType = $data['tripType'] ?? 'classic';
+            $mode = ($tripType === 'time' || $tripType === 'hourly') ? 'hourly' : 'classic';
+
+            if ($mode === 'hourly') {
+                // Course à la durée
+                $reservation = new FlatRateBooking();
+                $reservation->setClient($client);
+                $reservation->setDeparture($data['from']);
+                $reservation->setArrival($data['from']); // Pour mode durée, arrival = departure
+                $reservation->setDate($date);
+                $reservation->setNumberOfHours($data['duration'] ?? 2);
+                $reservation->setExcessBaggage($data['luggage'] ?? false);
+                $reservation->setPrice((string) $data['price']);
+                $reservation->setStatut('confirmed'); // Admin crée directement en "Acceptée"
+                $reservation->setPaymentMethod('immediate');
+            } else {
+                // Course classique
+                if (!isset($data['to'])) {
+                    return $this->json([
+                        'error' => 'Adresse d\'arrivée requise pour une course classique'
+                    ], Response::HTTP_BAD_REQUEST);
+                }
+                
+                $reservation = new ClassicReservation();
+                $reservation->setClient($client);
+                $reservation->setDeparture($data['from']);
+                $reservation->setArrival($data['to']);
+                $reservation->setDate($date);
+                $reservation->setExcessBaggage($data['luggage'] ?? false);
+                $reservation->setPrice((string) $data['price']);
+                $reservation->setStop($data['stop'] ?? null);
+                $reservation->setStatut('confirmed'); // Admin crée directement en "Acceptée"
+                $reservation->setPaymentMethod('immediate');
+            }
+
+            $this->entityManager->persist($reservation);
+            $this->entityManager->flush();
+
+            // Envoyer les notifications WhatsApp
+            $this->sendWhatsAppNotifications($reservation, $client, $data);
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Réservation créée avec succès',
+                'reservation' => [
+                    'id' => $reservation->getId(),
+                    'type' => $mode,
+                    'client' => [
+                        'id' => $client->getId(),
+                        'name' => $client->getFirstName() . ' ' . $client->getLastName(),
+                        'email' => $client->getEmail(),
+                        'phone' => $client->getPhoneNumber()
+                    ],
+                    'departure' => $reservation->getDeparture(),
+                    'arrival' => $reservation->getArrival(),
+                    'date' => $date->format('Y-m-d H:i:s'),
+                    'price' => $reservation->getPrice(),
+                    'status' => $reservation->getStatut()
                 ]
             ], Response::HTTP_CREATED);
 
@@ -674,10 +797,14 @@ class ReservationController extends AbstractController
     private function sendWhatsAppNotifications($reservation, User $user, array $data): void
     {
         try {
+            // Log pour déboguer
+            error_log('=== DÉBUT sendWhatsAppNotifications ===');
+            error_log('User phone: ' . $user->getPhoneNumber());
+            
             // Préparer les données pour les notifications
             $reservationData = [
-                'firstname' => $user->getFirstname(),
-                'lastname' => $user->getLastname(),
+                'firstname' => $user->getFirstName(),
+                'lastname' => $user->getLastName(),
                 'email' => $user->getEmail(),
                 'phone' => $user->getPhoneNumber(),
                 'date' => $reservation->getDate()->format('d/m/Y'),
@@ -685,6 +812,8 @@ class ReservationController extends AbstractController
                 'price' => $reservation->getPrice(),
                 'paymentMethod' => $reservation->getPaymentMethod()
             ];
+            
+            error_log('Reservation data prepared: ' . json_encode($reservationData));
 
             // Ajouter les données spécifiques selon le type de réservation
             if ($reservation instanceof ClassicReservation) {
@@ -702,23 +831,32 @@ class ReservationController extends AbstractController
             }
 
             // Notification au client
-            $this->whatsAppService->sendReservationConfirmation(
+            error_log('Envoi notification client...');
+            $result = $this->whatsAppService->sendReservationConfirmation(
                 $user->getPhoneNumber(),
                 $reservationData
             );
+            error_log('Résultat envoi client: ' . ($result ? 'SUCCÈS' : 'ÉCHEC'));
 
             // Notification à l'admin
             $adminPhoneNumber = $this->parameterBag->get('admin.whatsapp_number');
+            error_log('Admin phone number: ' . ($adminPhoneNumber ?? 'NON CONFIGURÉ'));
             if ($adminPhoneNumber) {
-                $this->whatsAppService->sendAdminNotification(
+                error_log('Envoi notification admin...');
+                $adminResult = $this->whatsAppService->sendAdminNotification(
                     $adminPhoneNumber,
                     $reservationData
                 );
+                error_log('Résultat envoi admin: ' . ($adminResult ? 'SUCCÈS' : 'ÉCHEC'));
             }
+
+            error_log('=== FIN sendWhatsAppNotifications ===');
 
         } catch (\Exception $e) {
             // Log l'erreur mais ne pas faire échouer la réservation
+            error_log('=== ERREUR sendWhatsAppNotifications ===');
             error_log('Erreur envoi WhatsApp: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
         }
     }
 
@@ -742,8 +880,8 @@ class ReservationController extends AbstractController
             
             // Préparer les données de la réservation
             $reservationData = [
-                'firstname' => $user->getFirstname(),
-                'lastname' => $user->getLastname(),
+                'firstname' => $user->getFirstName(),
+                'lastname' => $user->getLastName(),
                 'date' => $reservation->getDate()->format('d/m/Y'),
                 'time' => $reservation->getDate()->format('H:i'),
                 'price' => $reservation->getPrice()

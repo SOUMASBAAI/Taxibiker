@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import Footer from "../components/../Footer"; // 👈 j'importe ton footer
 import authService from "../../services/authService";
 import { buildApiUrl } from "../../config/api.js";
@@ -97,9 +98,12 @@ export default function AdminLogin() {
           />
 
           <div className="mb-6 text-right">
-            <a href="#" className="text-orange-500 hover:underline text-sm">
+            <Link
+              to="/forgot-password"
+              className="text-orange-500 hover:underline text-sm transition-colors duration-200"
+            >
               Mot de passe oublié ?
-            </a>
+            </Link>
           </div>
 
           <button

@@ -181,20 +181,93 @@ class ZonePricingService
         $departureNormalized = $this->normalizeAddress($departure);
         $arrivalNormalized = $this->normalizeAddress($arrival);
         
+        // Extract key words from addresses (airport names, major locations, etc.)
+        $departureKeywords = $this->extractKeywords($departureNormalized);
+        $arrivalKeywords = $this->extractKeywords($arrivalNormalized);
+        
         foreach ($allRoutes as $route) {
             $routeDepartureNormalized = $this->normalizeAddress($route->getDeparture());
             $routeArrivalNormalized = $this->normalizeAddress($route->getArrival());
             
-            // Check if addresses match (contains)
-            if ((strpos($departureNormalized, $routeDepartureNormalized) !== false || 
-                 strpos($routeDepartureNormalized, $departureNormalized) !== false) &&
-                (strpos($arrivalNormalized, $routeArrivalNormalized) !== false || 
-                 strpos($routeArrivalNormalized, $arrivalNormalized) !== false)) {
+            $routeDepartureKeywords = $this->extractKeywords($routeDepartureNormalized);
+            $routeArrivalKeywords = $this->extractKeywords($routeArrivalNormalized);
+            
+            // Check if key words match
+            $departureMatches = $this->matchKeywords($departureKeywords, $routeDepartureKeywords) ||
+                               strpos($departureNormalized, $routeDepartureNormalized) !== false ||
+                               strpos($routeDepartureNormalized, $departureNormalized) !== false;
+            
+            $arrivalMatches = $this->matchKeywords($arrivalKeywords, $routeArrivalKeywords) ||
+                             strpos($arrivalNormalized, $routeArrivalNormalized) !== false ||
+                             strpos($routeArrivalNormalized, $arrivalNormalized) !== false;
+            
+            if ($departureMatches && $arrivalMatches) {
                 return (float) $route->getPrice();
             }
         }
         
         return null;
+    }
+    
+    /**
+     * Extract key words from normalized address (airports, major locations, etc.)
+     */
+    private function extractKeywords(string $normalizedAddress): array
+    {
+        $keywords = [];
+        
+        // Extract airport names
+        if (preg_match('/AEROPORT\s+([A-Z\s]+?)(?:,|\s+\d+|$)/i', $normalizedAddress, $matches)) {
+            $airportName = trim($matches[1]);
+            // Remove common words
+            $airportName = preg_replace('/\b(DE|DU|LA|LE|LES|PARIS)\b/i', '', $airportName);
+            $airportName = preg_replace('/\s+/', ' ', trim($airportName));
+            if (!empty($airportName)) {
+                $keywords[] = $airportName;
+            }
+        }
+        
+        // Extract major location names (after comma or before postal code)
+        if (preg_match('/,\s*([A-Z\s]+?)(?:\s+\d+|$)/', $normalizedAddress, $matches)) {
+            $location = trim($matches[1]);
+            $location = preg_replace('/\b(DE|DU|LA|LE|LES)\b/i', '', $location);
+            $location = preg_replace('/\s+/', ' ', trim($location));
+            if (!empty($location) && strlen($location) > 3) {
+                $keywords[] = $location;
+            }
+        }
+        
+        // Extract postal codes if present
+        if (preg_match('/\b(\d{5})\b/', $normalizedAddress, $matches)) {
+            $keywords[] = $matches[1];
+        }
+        
+        return array_filter(array_unique($keywords));
+    }
+    
+    /**
+     * Check if two keyword arrays match (at least 50% of keywords match)
+     */
+    private function matchKeywords(array $keywords1, array $keywords2): bool
+    {
+        if (empty($keywords1) || empty($keywords2)) {
+            return false;
+        }
+        
+        $matched = 0;
+        foreach ($keywords1 as $keyword1) {
+            foreach ($keywords2 as $keyword2) {
+                // Check if keywords are similar (contain each other or are contained)
+                if (strpos($keyword1, $keyword2) !== false || strpos($keyword2, $keyword1) !== false) {
+                    $matched++;
+                    break;
+                }
+            }
+        }
+        
+        // At least 50% of keywords should match
+        $matchRatio = $matched / max(count($keywords1), count($keywords2));
+        return $matchRatio >= 0.5;
     }
     
     /**
@@ -326,6 +399,17 @@ class ZonePricingService
         $address = str_replace(['Ô', 'Ö'], 'O', $address);
         $address = str_replace(['Ù', 'Û', 'Ü'], 'U', $address);
         $address = str_replace(['Ç'], 'C', $address);
+        
+        // Remove common words that might differ between Google Places and database
+        $wordsToRemove = ['DE', 'LE', 'LA', 'LES', 'PARIS-', 'PARIS '];
+        foreach ($wordsToRemove as $word) {
+            $address = str_replace($word, '', $address);
+        }
+        
+        // Remove extra spaces and trim
+        $address = preg_replace('/\s+/', ' ', $address);
+        $address = trim($address);
+        
         return $address;
     }
 
