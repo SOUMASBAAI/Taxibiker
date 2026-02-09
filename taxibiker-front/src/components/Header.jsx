@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { FaBars, FaTimes, FaMotorcycle, FaUser } from "react-icons/fa";
-import logo from "@/assets/equipements/logo.jpeg";
+import logo from "../assets/equipements/logo.jpeg";
+
+
 // ou ../../assets/equipements/logo.jpeg selon ton arborescence
 
 
