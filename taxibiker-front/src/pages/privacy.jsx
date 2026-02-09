@@ -1,22 +1,21 @@
-
 const Privacy = () => {
   return (
-    <div className="max-w-6xl mx-auto px-6 py-16 text-gray-200 text-sm leading-relaxed">
-      <h1 className="text-3xl font-bold mb-10">
+    <div className="bg-black min-h-screen max-w-6xl mx-auto px-6 py-16 text-gray-100 text-sm leading-relaxed">
+      <h1 className="text-3xl font-bold mb-10 text-orange-500">
         Politique de confidentialité
       </h1>
 
       <section className="space-y-8">
         <div>
-          <h2 className="text-xl font-semibold mb-2">Qui sommes-nous ?</h2>
+          <h2 className="text-xl font-semibold mb-2 text-orange-400">Qui sommes-nous ?</h2>
           <p>
-            L’adresse de notre site est : <strong>https://taxibikerparis.fr</strong>.
-            Le site Taxi Biker Paris est hébergé par <strong>PlanetHoster</strong>.
+            L’adresse de notre site est : <strong className="text-orange-400">https://taxibikerparis.fr</strong>.
+            Le site Taxi Biker Paris est hébergé par <strong className="text-orange-400">PlanetHoster</strong>.
           </p>
         </div>
 
         <div>
-          <h2 className="text-xl font-semibold mb-2">Commentaires</h2>
+          <h2 className="text-xl font-semibold mb-2 text-orange-400">Commentaires</h2>
           <p>
             Quand vous laissez un commentaire sur notre site, les données
             inscrites dans le formulaire de commentaire, mais aussi votre adresse
@@ -26,14 +25,14 @@ const Privacy = () => {
           <p className="mt-2">
             Une chaîne anonymisée créée à partir de votre adresse e-mail
             (également appelée hash) peut être envoyée à un service tiers tel que
-            Gravatar afin de vérifier si vous utilisez ce dernier. Après
+            <strong className="text-orange-400"> Gravatar</strong> afin de vérifier si vous utilisez ce dernier. Après
             validation de votre commentaire, votre photo de profil pourra être
             visible publiquement à côté de votre commentaire.
           </p>
         </div>
 
         <div>
-          <h2 className="text-xl font-semibold mb-2">Médias</h2>
+          <h2 className="text-xl font-semibold mb-2 text-orange-400">Médias</h2>
           <p>
             Si vous téléversez des images sur le site, nous vous conseillons
             d’éviter de téléverser des images contenant des données EXIF de
@@ -43,7 +42,7 @@ const Privacy = () => {
         </div>
 
         <div>
-          <h2 className="text-xl font-semibold mb-2">Cookies</h2>
+          <h2 className="text-xl font-semibold mb-2 text-orange-400">Cookies</h2>
           <p>
             Si vous déposez un commentaire sur notre site, il vous sera proposé
             d’enregistrer votre nom, adresse e-mail et site dans des cookies.
@@ -60,7 +59,7 @@ const Privacy = () => {
         </div>
 
         <div>
-          <h2 className="text-xl font-semibold mb-2">
+          <h2 className="text-xl font-semibold mb-2 text-orange-400">
             Contenu embarqué depuis d’autres sites
           </h2>
           <p>
@@ -72,7 +71,7 @@ const Privacy = () => {
         </div>
 
         <div>
-          <h2 className="text-xl font-semibold mb-2">
+          <h2 className="text-xl font-semibold mb-2 text-orange-400">
             Les droits que vous avez sur vos données
           </h2>
           <p>
