@@ -408,23 +408,30 @@ export default function ReservationPage() {
     "Gare de La Défense",
     "Gare de Marne-la-Vallée",
   ];
-  // Time picker with separate hour and minute columns
+  // Scroll-wheel time picker – just scroll to pick, no click needed
   const TimePicker = ({ value, onChange }) => {
     const [open, setOpen] = useState(false);
     const containerRef = React.useRef(null);
     const hourListRef = React.useRef(null);
     const minuteListRef = React.useRef(null);
-    const itemHeight = 40;
+    const hourTimerRef = React.useRef(null);
+    const minuteTimerRef = React.useRef(null);
+    const isInitScroll = React.useRef(false);
 
-    // Temporary selection state (not committed until "Sélectionner" is clicked)
+    const itemHeight = 44;
+    const listHeight = 220; // 5 visible items
+    const padHeight = (listHeight - itemHeight) / 2; // padding so first/last items can center
+
     const [tempHour, setTempHour] = useState("00");
     const [tempMinute, setTempMinute] = useState("00");
 
-    const hours = Array.from({ length: 24 }, (_, h) =>
-      h.toString().padStart(2, "0")
+    const hours = React.useMemo(
+      () => Array.from({ length: 24 }, (_, h) => h.toString().padStart(2, "0")),
+      []
     );
-    const minutes = Array.from({ length: 60 }, (_, m) =>
-      m.toString().padStart(2, "0")
+    const minutes = React.useMemo(
+      () => Array.from({ length: 60 }, (_, m) => m.toString().padStart(2, "0")),
+      []
     );
 
     const parseValue = (val) => {
@@ -433,28 +440,69 @@ export default function ReservationPage() {
       return { h: h.padStart(2, "0"), m: m.padStart(2, "0") };
     };
 
-    const scrollToIndex = (ref, index) => {
+    const scrollToIndex = (ref, index, smooth) => {
       if (!ref?.current) return;
-      ref.current.scrollTo({ top: index * itemHeight, behavior: "smooth" });
+      ref.current.scrollTo({
+        top: index * itemHeight,
+        behavior: smooth ? "smooth" : "instant",
+      });
     };
 
-    // When opening, sync temp state from current value
+    // Detect centered item from scroll position and snap
+    const snapAndSelect = (ref, items, setter) => {
+      if (!ref?.current || isInitScroll.current) return;
+      const scrollTop = ref.current.scrollTop;
+      const index = Math.min(
+        items.length - 1,
+        Math.max(0, Math.round(scrollTop / itemHeight))
+      );
+      setter(items[index]);
+      scrollToIndex(ref, index, true);
+    };
+
+    const handleHourScroll = () => {
+      if (hourTimerRef.current) clearTimeout(hourTimerRef.current);
+      hourTimerRef.current = setTimeout(
+        () => snapAndSelect(hourListRef, hours, setTempHour),
+        80
+      );
+    };
+
+    const handleMinuteScroll = () => {
+      if (minuteTimerRef.current) clearTimeout(minuteTimerRef.current);
+      minuteTimerRef.current = setTimeout(
+        () => snapAndSelect(minuteListRef, minutes, setTempMinute),
+        80
+      );
+    };
+
+    // On open: sync temp state and scroll to current value instantly
     React.useEffect(() => {
       if (open) {
         const { h, m } = parseValue(value);
         setTempHour(h);
         setTempMinute(m);
-        setTimeout(() => {
-          scrollToIndex(hourListRef, parseInt(h, 10));
-          scrollToIndex(minuteListRef, parseInt(m, 10));
-        }, 50);
+        isInitScroll.current = true;
+        // requestAnimationFrame ensures DOM is ready
+        requestAnimationFrame(() => {
+          scrollToIndex(hourListRef, parseInt(h, 10), false);
+          scrollToIndex(minuteListRef, parseInt(m, 10), false);
+          // Small delay before enabling scroll detection
+          setTimeout(() => {
+            isInitScroll.current = false;
+          }, 150);
+        });
       }
+      return () => {
+        if (hourTimerRef.current) clearTimeout(hourTimerRef.current);
+        if (minuteTimerRef.current) clearTimeout(minuteTimerRef.current);
+      };
     }, [open]);
 
+    // Close on outside click
     React.useEffect(() => {
       const handleClick = (e) => {
-        if (!containerRef.current) return;
-        if (!containerRef.current.contains(e.target)) {
+        if (containerRef.current && !containerRef.current.contains(e.target)) {
           setOpen(false);
         }
       };
@@ -462,18 +510,55 @@ export default function ReservationPage() {
       return () => document.removeEventListener("mousedown", handleClick);
     }, []);
 
-    const handleHourSelect = (hour) => {
-      setTempHour(hour);
-    };
-
-    const handleMinuteSelect = (minute) => {
-      setTempMinute(minute);
-    };
-
     const handleConfirm = () => {
       onChange(`${tempHour}:${tempMinute}`);
       setOpen(false);
     };
+
+    // Shared column renderer
+    const renderColumn = (ref, items, selected, onScroll, label) => (
+      <div className="flex-1">
+        <h4 className="text-xs text-gray-400 mb-1 text-center font-medium">
+          {label}
+        </h4>
+        <div
+          className="relative overflow-hidden rounded-lg"
+          style={{ height: listHeight }}
+        >
+          {/* Fade edges */}
+          <div className="absolute inset-0 pointer-events-none z-10 bg-gradient-to-b from-gray-900 via-transparent to-gray-900" />
+          {/* Selection band */}
+          <div
+            className="absolute left-1 right-1 top-1/2 -translate-y-1/2 rounded-md bg-[#DD5212]/15 border border-[#DD5212]/50 pointer-events-none z-10"
+            style={{ height: itemHeight }}
+          />
+          <div
+            ref={ref}
+            onScroll={onScroll}
+            className="overflow-y-scroll no-scrollbar"
+            style={{ height: listHeight }}
+          >
+            {/* Top padding so first item can reach center */}
+            <div style={{ height: padHeight }} />
+            {items.map((item) => (
+              <div
+                key={item}
+                style={{ height: itemHeight }}
+                className={`flex items-center justify-center text-sm select-none transition-all duration-150 ${
+                  selected === item
+                    ? "text-white font-bold text-base"
+                    : "text-gray-500"
+                }`}
+              >
+                {item}
+              </div>
+            ))}
+            {/* Bottom padding so last item can reach center */}
+            <div style={{ height: padHeight }} />
+          </div>
+        </div>
+      </div>
+    );
 
     return (
       <div ref={containerRef} className="relative">
@@ -486,84 +571,45 @@ export default function ReservationPage() {
           className="w-full px-3 py-2.5 rounded-lg bg-gray-900/80 border border-gray-700 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#DD5212]/50 focus:border-[#DD5212] hover:border-gray-500 transition cursor-pointer"
         />
         {open && (
-          <div className="absolute z-20 mt-2 w-full rounded-lg bg-gray-900 border border-gray-700 shadow-lg p-3">
-            {/* Preview of selected time */}
+          <div className="absolute z-20 mt-2 w-full rounded-lg bg-gray-900 border border-gray-700 shadow-xl p-3">
+            {/* Live preview */}
             <div className="text-center mb-2">
-              <span className="text-[#DD5212] font-bold text-lg">
-                {tempHour}:{tempMinute}
+              <span className="text-[#DD5212] font-bold text-xl tracking-wider">
+                {tempHour} : {tempMinute}
               </span>
             </div>
 
-            <div className="flex gap-4">
-              {/* Hours column */}
-              <div className="flex-1">
-                <h4 className="text-xs text-gray-400 mb-2 text-center">
-                  Heures
-                </h4>
-                <div className="relative h-48 overflow-hidden">
-                  <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-gray-900/70 via-transparent to-gray-900/70"></div>
-                  <div className="absolute top-1/2 left-0 right-0 -translate-y-1/2 border-y border-[#DD5212]/40 h-10 pointer-events-none" />
-                  <div
-                    ref={hourListRef}
-                    className="h-48 overflow-y-scroll no-scrollbar snap-y snap-mandatory"
-                  >
-                    {hours.map((h) => (
-                      <div
-                        key={h}
-                        onClick={() => handleHourSelect(h)}
-                        className={`h-10 flex items-center justify-center snap-start cursor-pointer transition text-sm ${
-                          tempHour === h
-                            ? "text-[#DD5212] font-bold"
-                            : "text-gray-400"
-                        }`}
-                      >
-                        {h}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+            <div className="flex gap-3 items-start">
+              {renderColumn(
+                hourListRef,
+                hours,
+                tempHour,
+                handleHourScroll,
+                "Heures"
+              )}
 
               {/* Separator */}
-              <div className="flex items-center justify-center text-white text-lg">
+              <div
+                className="flex items-center justify-center text-white text-2xl font-bold"
+                style={{ height: listHeight, paddingTop: 20 }}
+              >
                 :
               </div>
 
-              {/* Minutes column */}
-              <div className="flex-1">
-                <h4 className="text-xs text-gray-400 mb-2 text-center">
-                  Minutes
-                </h4>
-                <div className="relative h-48 overflow-hidden">
-                  <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-gray-900/70 via-transparent to-gray-900/70"></div>
-                  <div className="absolute top-1/2 left-0 right-0 -translate-y-1/2 border-y border-[#DD5212]/40 h-10 pointer-events-none" />
-                  <div
-                    ref={minuteListRef}
-                    className="h-48 overflow-y-scroll no-scrollbar snap-y snap-mandatory"
-                  >
-                    {minutes.map((m) => (
-                      <div
-                        key={m}
-                        onClick={() => handleMinuteSelect(m)}
-                        className={`h-10 flex items-center justify-center snap-start cursor-pointer transition text-sm ${
-                          tempMinute === m
-                            ? "text-[#DD5212] font-bold"
-                            : "text-gray-400"
-                        }`}
-                      >
-                        {m}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              {renderColumn(
+                minuteListRef,
+                minutes,
+                tempMinute,
+                handleMinuteScroll,
+                "Minutes"
+              )}
             </div>
 
             {/* Confirm button */}
             <button
               type="button"
               onClick={handleConfirm}
-              className="w-full mt-3 py-2 bg-[#DD5212] text-white rounded-lg font-medium text-sm hover:bg-[#c44810] transition"
+              className="w-full mt-3 py-2.5 bg-[#DD5212] text-white rounded-lg font-semibold text-sm hover:bg-[#c44810] active:scale-[0.98] transition"
             >
               Sélectionner {tempHour}:{tempMinute}
             </button>
