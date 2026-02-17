@@ -1348,6 +1348,23 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchClients = async () => {
+    try {
+      const response = await authService.authenticatedRequest(
+        buildApiUrl("admin/clients")
+      );
+      const result = await response.json();
+
+      if (result.success) {
+        setClients(result.clients);
+      } else {
+        console.error("Erreur lors du chargement des clients:", result.error);
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des clients:", error);
+    }
+  };
+
   // Fetch real reservations from API
   useEffect(() => {
     const user = authService.getUser();
@@ -1357,18 +1374,17 @@ export default function AdminDashboard() {
     }
     setAuthChecked(true);
 
-    const loadReservations = async () => {
+    const loadData = async () => {
       try {
-        await fetchReservations();
+        await Promise.all([fetchReservations(), fetchClients()]);
       } catch (error) {
-        console.error("Erreur lors du chargement des réservations:", error);
-        // En cas d'erreur, garder les données mockées pour le développement
+        console.error("Erreur lors du chargement des données:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadReservations();
+    loadData();
   }, []);
 
   // Réservations

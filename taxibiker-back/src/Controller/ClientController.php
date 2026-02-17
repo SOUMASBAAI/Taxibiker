@@ -2,6 +2,11 @@
 
 namespace App\Controller;
 
+use App\Entity\ClassicReservation;
+use App\Entity\CreditRegularization;
+use App\Entity\FlatRateBooking;
+use App\Entity\PasswordResetToken;
+use App\Entity\PredefinedReservation;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -167,6 +172,32 @@ class ClientController extends AbstractController
                     'success' => false,
                     'error' => 'Impossible de supprimer cet utilisateur'
                 ], Response::HTTP_FORBIDDEN);
+            }
+
+            // Supprimer toutes les réservations et données associées au client
+            $classicReservations = $this->entityManager->getRepository(ClassicReservation::class)->findBy(['client' => $client]);
+            foreach ($classicReservations as $reservation) {
+                $this->entityManager->remove($reservation);
+            }
+
+            $predefinedReservations = $this->entityManager->getRepository(PredefinedReservation::class)->findBy(['client' => $client]);
+            foreach ($predefinedReservations as $reservation) {
+                $this->entityManager->remove($reservation);
+            }
+
+            $flatRateBookings = $this->entityManager->getRepository(FlatRateBooking::class)->findBy(['client' => $client]);
+            foreach ($flatRateBookings as $booking) {
+                $this->entityManager->remove($booking);
+            }
+
+            $creditRegularizations = $this->entityManager->getRepository(CreditRegularization::class)->findBy(['user' => $client]);
+            foreach ($creditRegularizations as $regularization) {
+                $this->entityManager->remove($regularization);
+            }
+
+            $passwordResetTokens = $this->entityManager->getRepository(PasswordResetToken::class)->findBy(['user' => $client]);
+            foreach ($passwordResetTokens as $token) {
+                $this->entityManager->remove($token);
             }
 
             // Supprimer le client
