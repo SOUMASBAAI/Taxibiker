@@ -416,6 +416,10 @@ export default function ReservationPage() {
     const minuteListRef = React.useRef(null);
     const itemHeight = 40;
 
+    // Temporary selection state (not committed until "Sélectionner" is clicked)
+    const [tempHour, setTempHour] = useState("00");
+    const [tempMinute, setTempMinute] = useState("00");
+
     const hours = Array.from({ length: 24 }, (_, h) =>
       h.toString().padStart(2, "0")
     );
@@ -424,24 +428,28 @@ export default function ReservationPage() {
     );
 
     const parseValue = (val) => {
-      if (!val || !/^[0-2]\d:[0-5]\d$/.test(val)) return { h: 0, m: "00" };
+      if (!val || !/^[0-2]\d:[0-5]\d$/.test(val)) return { h: "00", m: "00" };
       const [h, m] = val.split(":");
-      return { h: Math.min(23, Math.max(0, parseInt(h, 10))), m };
+      return { h: h.padStart(2, "0"), m: m.padStart(2, "0") };
     };
-
-    const { h: selectedHour, m: selectedMinute } = parseValue(value);
 
     const scrollToIndex = (ref, index) => {
       if (!ref?.current) return;
       ref.current.scrollTo({ top: index * itemHeight, behavior: "smooth" });
     };
 
+    // When opening, sync temp state from current value
     React.useEffect(() => {
       if (open) {
-        scrollToIndex(hourListRef, selectedHour);
-        scrollToIndex(minuteListRef, parseInt(selectedMinute, 10));
+        const { h, m } = parseValue(value);
+        setTempHour(h);
+        setTempMinute(m);
+        setTimeout(() => {
+          scrollToIndex(hourListRef, parseInt(h, 10));
+          scrollToIndex(minuteListRef, parseInt(m, 10));
+        }, 50);
       }
-    }, [open, selectedHour, selectedMinute]);
+    }, [open]);
 
     React.useEffect(() => {
       const handleClick = (e) => {
@@ -455,11 +463,16 @@ export default function ReservationPage() {
     }, []);
 
     const handleHourSelect = (hour) => {
-      onChange(`${hour}:${selectedMinute}`);
+      setTempHour(hour);
     };
 
     const handleMinuteSelect = (minute) => {
-      onChange(`${hours[selectedHour]}:${minute}`);
+      setTempMinute(minute);
+    };
+
+    const handleConfirm = () => {
+      onChange(`${tempHour}:${tempMinute}`);
+      setOpen(false);
     };
 
     return (
@@ -474,6 +487,13 @@ export default function ReservationPage() {
         />
         {open && (
           <div className="absolute z-20 mt-2 w-full rounded-lg bg-gray-900 border border-gray-700 shadow-lg p-3">
+            {/* Preview of selected time */}
+            <div className="text-center mb-2">
+              <span className="text-[#DD5212] font-bold text-lg">
+                {tempHour}:{tempMinute}
+              </span>
+            </div>
+
             <div className="flex gap-4">
               {/* Hours column */}
               <div className="flex-1">
@@ -492,8 +512,8 @@ export default function ReservationPage() {
                         key={h}
                         onClick={() => handleHourSelect(h)}
                         className={`h-10 flex items-center justify-center snap-start cursor-pointer transition text-sm ${
-                          selectedHour === parseInt(h, 10)
-                            ? "text-white font-medium"
+                          tempHour === h
+                            ? "text-[#DD5212] font-bold"
                             : "text-gray-400"
                         }`}
                       >
@@ -526,8 +546,8 @@ export default function ReservationPage() {
                         key={m}
                         onClick={() => handleMinuteSelect(m)}
                         className={`h-10 flex items-center justify-center snap-start cursor-pointer transition text-sm ${
-                          selectedMinute === m
-                            ? "text-white font-medium"
+                          tempMinute === m
+                            ? "text-[#DD5212] font-bold"
                             : "text-gray-400"
                         }`}
                       >
@@ -538,6 +558,15 @@ export default function ReservationPage() {
                 </div>
               </div>
             </div>
+
+            {/* Confirm button */}
+            <button
+              type="button"
+              onClick={handleConfirm}
+              className="w-full mt-3 py-2 bg-[#DD5212] text-white rounded-lg font-medium text-sm hover:bg-[#c44810] transition"
+            >
+              Sélectionner {tempHour}:{tempMinute}
+            </button>
           </div>
         )}
       </div>
