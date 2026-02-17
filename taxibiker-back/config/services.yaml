@@ -6,7 +6,7 @@
 parameters:
     # Configuration email admin pour les notifications
     admin.notification_email: "%env(default:admin_email_default:ADMIN_NOTIFICATION_EMAIL)%"
-    admin_email_default: "contact@taxibikerparis.com"
+    admin_email_default: "infos.taxi.biker@gmail.com"
 
     # Configuration email par défaut pour développement
     mailer.dsn: "%env(default:mailer_default:MAILER_DSN)%"
