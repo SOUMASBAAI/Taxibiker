@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nouvelle réservation - TaxiBikerParis Admin</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #DD5212;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #DD5212;
+            margin-bottom: 10px;
+        }
+        .alert-badge {
+            display: inline-block;
+            background: #DD5212;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .content {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #DD5212;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #FED7AA;
+        }
+        .info-card {
+            background: #F9FAFB;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin: 10px 0;
+        }
+        .info-row {
+            padding: 6px 0;
+            border-bottom: 1px solid #F3F4F6;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #6B7280;
+            display: inline-block;
+            min-width: 110px;
+        }
+        .info-value {
+            color: #1f2937;
+        }
+        .price-highlight {
+            background: #DD5212;
+            color: white;
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .action-box {
+            background: #FFF7ED;
+            border: 2px solid #DD5212;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 25px 0;
+        }
+        .action-box p {
+            margin: 5px 0;
+            color: #9A3412;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 13px;
+            color: #9CA3AF;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🏍️ TaxiBikerParis - Admin</div>
+            <div class="alert-badge">🔔 Nouvelle demande de course</div>
+        </div>
+
+        <div class="content">
+            <div class="section-title">👤 Informations client</div>
+            <div class="info-card">
+                <div class="info-row">
+                    <span class="info-label">Nom</span>
+                    <span class="info-value"><strong>{{ firstname }} {{ lastname }}</strong></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">📞 Téléphone</span>
+                    <span class="info-value">{{ phone }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">📧 Email</span>
+                    <span class="info-value">{{ email }}</span>
+                </div>
+            </div>
+
+            <div class="section-title">🚕 Détails de la course</div>
+            <div class="info-card">
+                <div class="info-row">
+                    <span class="info-label">📅 Date</span>
+                    <span class="info-value">{{ date }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">🕒 Heure</span>
+                    <span class="info-value">{{ time }}</span>
+                </div>
+                {% if type is defined and type == 'time' %}
+                <div class="info-row">
+                    <span class="info-label">📍 Départ</span>
+                    <span class="info-value">{{ from }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">⏱️ Durée</span>
+                    <span class="info-value">{{ duration }}h</span>
+                </div>
+                {% else %}
+                <div class="info-row">
+                    <span class="info-label">📍 Départ</span>
+                    <span class="info-value">{{ from }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">🏁 Arrivée</span>
+                    <span class="info-value">{{ to|default(from) }}</span>
+                </div>
+                {% if stop is defined and stop %}
+                <div class="info-row">
+                    <span class="info-label">🛑 Arrêt</span>
+                    <span class="info-value">{{ stop }}</span>
+                </div>
+                {% endif %}
+                {% endif %}
+                {% if luggage is defined and luggage %}
+                <div class="info-row">
+                    <span class="info-label">🧳 Bagages</span>
+                    <span class="info-value">Oui</span>
+                </div>
+                {% endif %}
+                {% if paymentMethod is defined %}
+                <div class="info-row">
+                    <span class="info-label">💳 Paiement</span>
+                    <span class="info-value">{{ paymentMethod == 'credit' ? 'Crédit mensuel' : 'Paiement immédiat' }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="price-highlight">
+                💰 {{ price }}€
+            </div>
+
+            <div class="action-box">
+                <p><strong>⚡ Action requise</strong></p>
+                <p>Connectez-vous au dashboard admin pour confirmer ou refuser cette réservation.</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Email automatique - TaxiBikerParis Admin</p>
+        </div>
+    </div>
+</body>
+</html>

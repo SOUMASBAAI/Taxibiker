@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmation de réservation - TaxiBikerParis</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #DD5212;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #DD5212;
+            margin-bottom: 10px;
+        }
+        .title {
+            font-size: 22px;
+            color: #1f2937;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        .content {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        .info-card {
+            background: #FFF7ED;
+            border: 1px solid #FDBA74;
+            border-left: 4px solid #DD5212;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .info-row {
+            display: flex;
+            padding: 8px 0;
+            border-bottom: 1px solid #FED7AA;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #9A3412;
+            min-width: 120px;
+        }
+        .info-value {
+            color: #1f2937;
+        }
+        .price-box {
+            background: #DD5212;
+            color: white;
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .price-box .price {
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .price-box .price-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .status-badge {
+            display: inline-block;
+            background: #FEF3C7;
+            color: #92400E;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 14px;
+            color: #6b7280;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🏍️ TaxiBikerParis</div>
+            <h1 class="title">Confirmation de réservation</h1>
+            <p class="subtitle">Votre demande a été enregistrée</p>
+        </div>
+
+        <div class="content">
+            <p>Bonjour <strong>{{ firstname }}</strong>,</p>
+            
+            <p>Votre demande de course a bien été reçue. Voici le récapitulatif :</p>
+            
+            <div class="info-card">
+                <div class="info-row">
+                    <span class="info-label">📅 Date</span>
+                    <span class="info-value">{{ date }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">🕒 Heure</span>
+                    <span class="info-value">{{ time }}</span>
+                </div>
+                {% if type is defined and type == 'time' %}
+                <div class="info-row">
+                    <span class="info-label">📍 Départ</span>
+                    <span class="info-value">{{ from }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">⏱️ Durée</span>
+                    <span class="info-value">{{ duration }}h</span>
+                </div>
+                {% else %}
+                <div class="info-row">
+                    <span class="info-label">📍 Départ</span>
+                    <span class="info-value">{{ from }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">🏁 Arrivée</span>
+                    <span class="info-value">{{ to|default(from) }}</span>
+                </div>
+                {% if stop is defined and stop %}
+                <div class="info-row">
+                    <span class="info-label">🛑 Arrêt</span>
+                    <span class="info-value">{{ stop }}</span>
+                </div>
+                {% endif %}
+                {% endif %}
+                {% if luggage is defined and luggage %}
+                <div class="info-row">
+                    <span class="info-label">🧳 Bagages</span>
+                    <span class="info-value">Oui (supplément inclus)</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="price-box">
+                <div class="price-label">Prix total</div>
+                <div class="price">{{ price }}€</div>
+            </div>
+
+            <p style="text-align: center;">
+                Statut : <span class="status-badge">⏳ En attente de confirmation</span>
+            </p>
+            
+            <p>Vous recevrez un email dès que votre réservation sera validée par notre équipe.</p>
+        </div>
+
+        <div class="footer">
+            <p>Merci de votre confiance !</p>
+            <p>TaxiBikerParis - Service de transport moto professionnel</p>
+            <p style="font-size: 12px;">Paris, France | contact@taxibikerparis.com</p>
+        </div>
+    </div>
+</body>
+</html>

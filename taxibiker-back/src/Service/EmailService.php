@@ -5,6 +5,7 @@ namespace App\Service;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
+use Symfony\Component\Mime\Address;
 use Twig\Environment;
 
 class EmailService
@@ -32,6 +33,143 @@ class EmailService
         }
     }
 
+    // ===================================================================
+    // NOTIFICATIONS RÉSERVATION (remplace WhatsApp)
+    // ===================================================================
+
+    /**
+     * Envoie un email de confirmation de réservation au client
+     */
+    public function sendReservationConfirmation(string $toEmail, array $reservationData): bool
+    {
+        if (!$this->isEnabled) {
+            $this->logger->info('Email désactivé - Simulation confirmation réservation', [
+                'to' => $toEmail,
+                'data' => $reservationData
+            ]);
+            return true;
+        }
+
+        try {
+            $htmlContent = $this->twig->render('emails/reservation_confirmation.html.twig', $reservationData);
+
+            $email = (new Email())
+                ->from(new Address($this->fromEmail, $this->fromName))
+                ->to($toEmail)
+                ->subject('TaxiBikerParis - Confirmation de votre réservation')
+                ->html($htmlContent);
+
+            $this->mailer->send($email);
+
+            $this->logger->info('Email confirmation réservation envoyé', [
+                'to' => $toEmail,
+                'date' => $reservationData['date'] ?? '',
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur envoi email confirmation réservation', [
+                'error' => $e->getMessage(),
+                'to' => $toEmail,
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Envoie un email de changement de statut au client
+     */
+    public function sendStatusUpdate(string $toEmail, array $reservationData, string $newStatus): bool
+    {
+        if (!$this->isEnabled) {
+            $this->logger->info('Email désactivé - Simulation mise à jour statut', [
+                'to' => $toEmail,
+                'status' => $newStatus,
+            ]);
+            return true;
+        }
+
+        try {
+            $subjectMap = [
+                'Acceptée'  => 'Votre réservation est confirmée !',
+                'Refusée'   => 'Votre réservation a été annulée',
+                'En cours'  => 'Votre course est en cours',
+                'Terminée'  => 'Votre course est terminée',
+            ];
+
+            $subject = 'TaxiBikerParis - ' . ($subjectMap[$newStatus] ?? "Mise à jour de votre réservation");
+
+            $htmlContent = $this->twig->render('emails/reservation_status_update.html.twig', [
+                ...$reservationData,
+                'status' => $newStatus,
+            ]);
+
+            $email = (new Email())
+                ->from(new Address($this->fromEmail, $this->fromName))
+                ->to($toEmail)
+                ->subject($subject)
+                ->html($htmlContent);
+
+            $this->mailer->send($email);
+
+            $this->logger->info('Email mise à jour statut envoyé', [
+                'to' => $toEmail,
+                'status' => $newStatus,
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur envoi email mise à jour statut', [
+                'error' => $e->getMessage(),
+                'to' => $toEmail,
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Envoie une notification à l'admin pour une nouvelle réservation
+     */
+    public function sendAdminNotification(string $adminEmail, array $reservationData): bool
+    {
+        if (!$this->isEnabled) {
+            $this->logger->info('Email désactivé - Simulation notification admin', [
+                'to' => $adminEmail,
+                'data' => $reservationData,
+            ]);
+            return true;
+        }
+
+        try {
+            $htmlContent = $this->twig->render('emails/admin_new_reservation.html.twig', $reservationData);
+
+            $email = (new Email())
+                ->from(new Address($this->fromEmail, $this->fromName))
+                ->to($adminEmail)
+                ->subject('TaxiBikerParis - Nouvelle demande de course de ' . ($reservationData['firstname'] ?? '') . ' ' . ($reservationData['lastname'] ?? ''))
+                ->html($htmlContent);
+
+            $this->mailer->send($email);
+
+            $this->logger->info('Email notification admin envoyé', [
+                'to' => $adminEmail,
+                'client' => ($reservationData['firstname'] ?? '') . ' ' . ($reservationData['lastname'] ?? ''),
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur envoi email notification admin', [
+                'error' => $e->getMessage(),
+                'to' => $adminEmail,
+            ]);
+            return false;
+        }
+    }
+
+    // ===================================================================
+    // EMAILS EXISTANTS (mot de passe, contact)
+    // ===================================================================
+
     /**
      * Envoie un email de réinitialisation de mot de passe
      */
@@ -55,9 +193,9 @@ class EmailService
             ]);
 
             $email = (new Email())
-                ->from($this->fromEmail)
+                ->from(new Address($this->fromEmail, $this->fromName))
                 ->to($to)
-                ->subject('TaxiBiker - Réinitialisation de votre mot de passe')
+                ->subject('TaxiBikerParis - Réinitialisation de votre mot de passe')
                 ->html($htmlContent);
 
             $this->mailer->send($email);
@@ -85,7 +223,6 @@ class EmailService
         if ($_ENV['APP_ENV'] === 'prod') {
             $baseUrl = 'https://taxibikerparis.com';
         } else {
-            // Utiliser la variable d'environnement ou détecter automatiquement
             $baseUrl = $_ENV['FRONTEND_URL'] ?? $this->detectFrontendUrl();
         }
             
@@ -97,7 +234,6 @@ class EmailService
      */
     private function detectFrontendUrl(): string
     {
-        // Vérifier d'abord le port préféré (3000), puis les alternatives Vite
         $portsToTry = [3000, 3001, 3002];
         
         foreach ($portsToTry as $port) {
@@ -107,7 +243,6 @@ class EmailService
             }
         }
         
-        // Si aucun port ne répond, utiliser le port par défaut configuré (3000)
         $this->logger->warning("Aucun frontend détecté, utilisation du port par défaut 3000");
         return 'http://localhost:3000';
     }
@@ -143,9 +278,9 @@ class EmailService
             ]);
 
             $email = (new Email())
-                ->from($this->fromEmail)
+                ->from(new Address($this->fromEmail, $this->fromName))
                 ->to($to)
-                ->subject('TaxiBiker - Mot de passe modifié')
+                ->subject('TaxiBikerParis - Mot de passe modifié')
                 ->html($htmlContent);
 
             $this->mailer->send($email);
@@ -199,10 +334,10 @@ class EmailService
             );
 
             $email = (new Email())
-                ->from($this->fromEmail)
+                ->from(new Address($this->fromEmail, $this->fromName))
                 ->to($receiver)
                 ->replyTo($fromEmail)
-                ->subject(sprintf('TaxiBiker - Contact de %s', $fromName))
+                ->subject(sprintf('TaxiBikerParis - Contact de %s', $fromName))
                 ->html($htmlBody);
 
             $this->mailer->send($email);

@@ -7,7 +7,7 @@ use App\Entity\ClassicReservation;
 use App\Entity\FlatRateBooking;
 use App\Repository\CreditRegularizationRepository;
 use App\Repository\UserRepository;
-use App\Service\WhatsAppService;
+use App\Service\EmailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -23,7 +23,7 @@ class ReservationController extends AbstractController
     public function __construct(
         private EntityManagerInterface $entityManager,
         private CreditRegularizationRepository $creditRegularizationRepository,
-        private WhatsAppService $whatsAppService,
+        private EmailService $emailService,
         private ParameterBagInterface $parameterBag,
         private UserRepository $userRepository,
         private UserPasswordHasherInterface $passwordHasher
@@ -112,7 +112,7 @@ class ReservationController extends AbstractController
             $this->entityManager->flush();
 
             // Envoi des notifications WhatsApp
-            $this->sendWhatsAppNotifications($reservation, $user, $data);
+            $this->sendEmailNotifications($reservation, $user, $data);
 
             $responseMessage = $paymentMethod === 'credit'
                 ? 'Réservation créée avec succès. Le montant a été ajouté à votre crédit mensuel.'
@@ -230,7 +230,7 @@ class ReservationController extends AbstractController
             $this->entityManager->flush();
 
             // Envoyer les notifications WhatsApp
-            $this->sendWhatsAppNotifications($reservation, $client, $data);
+            $this->sendEmailNotifications($reservation, $client, $data);
 
             return $this->json([
                 'success' => true,
@@ -792,14 +792,13 @@ class ReservationController extends AbstractController
     }
 
     /**
-     * Envoie les notifications WhatsApp pour une nouvelle réservation
+     * Envoie les notifications email pour une nouvelle réservation
      */
-    private function sendWhatsAppNotifications($reservation, User $user, array $data): void
+    private function sendEmailNotifications($reservation, User $user, array $data): void
     {
         try {
-            // Log pour déboguer
-            error_log('=== DÉBUT sendWhatsAppNotifications ===');
-            error_log('User phone: ' . $user->getPhoneNumber());
+            error_log('=== DÉBUT sendEmailNotifications ===');
+            error_log('User email: ' . $user->getEmail());
             
             // Préparer les données pour les notifications
             $reservationData = [
@@ -810,10 +809,8 @@ class ReservationController extends AbstractController
                 'date' => $reservation->getDate()->format('d/m/Y'),
                 'time' => $reservation->getDate()->format('H:i'),
                 'price' => $reservation->getPrice(),
-                'paymentMethod' => $reservation->getPaymentMethod()
+                'paymentMethod' => method_exists($reservation, 'getPaymentMethod') ? $reservation->getPaymentMethod() : 'immediate'
             ];
-            
-            error_log('Reservation data prepared: ' . json_encode($reservationData));
 
             // Ajouter les données spécifiques selon le type de réservation
             if ($reservation instanceof ClassicReservation) {
@@ -830,38 +827,38 @@ class ReservationController extends AbstractController
                 $reservationData['luggage'] = $reservation->isExcessBaggage();
             }
 
-            // Notification au client
-            error_log('Envoi notification client...');
-            $result = $this->whatsAppService->sendReservationConfirmation(
-                $user->getPhoneNumber(),
+            // Notification email au client
+            error_log('Envoi email client...');
+            $result = $this->emailService->sendReservationConfirmation(
+                $user->getEmail(),
                 $reservationData
             );
-            error_log('Résultat envoi client: ' . ($result ? 'SUCCÈS' : 'ÉCHEC'));
+            error_log('Résultat envoi email client: ' . ($result ? 'SUCCÈS' : 'ÉCHEC'));
 
-            // Notification à l'admin
-            $adminPhoneNumber = $this->parameterBag->get('admin.whatsapp_number');
-            error_log('Admin phone number: ' . ($adminPhoneNumber ?? 'NON CONFIGURÉ'));
-            if ($adminPhoneNumber) {
-                error_log('Envoi notification admin...');
-                $adminResult = $this->whatsAppService->sendAdminNotification(
-                    $adminPhoneNumber,
+            // Notification email à l'admin
+            $adminEmail = $this->parameterBag->get('admin.notification_email');
+            error_log('Admin email: ' . ($adminEmail ?? 'NON CONFIGURÉ'));
+            if ($adminEmail) {
+                error_log('Envoi email admin...');
+                $adminResult = $this->emailService->sendAdminNotification(
+                    $adminEmail,
                     $reservationData
                 );
-                error_log('Résultat envoi admin: ' . ($adminResult ? 'SUCCÈS' : 'ÉCHEC'));
+                error_log('Résultat envoi email admin: ' . ($adminResult ? 'SUCCÈS' : 'ÉCHEC'));
             }
 
-            error_log('=== FIN sendWhatsAppNotifications ===');
+            error_log('=== FIN sendEmailNotifications ===');
 
         } catch (\Exception $e) {
             // Log l'erreur mais ne pas faire échouer la réservation
-            error_log('=== ERREUR sendWhatsAppNotifications ===');
-            error_log('Erreur envoi WhatsApp: ' . $e->getMessage());
+            error_log('=== ERREUR sendEmailNotifications ===');
+            error_log('Erreur envoi email: ' . $e->getMessage());
             error_log('Stack trace: ' . $e->getTraceAsString());
         }
     }
 
     /**
-     * Envoie une notification WhatsApp pour un changement de statut
+     * Envoie une notification email pour un changement de statut
      */
     private function sendStatusUpdateNotification($reservation, string $newStatus): void
     {
@@ -877,6 +874,11 @@ class ReservationController extends AbstractController
             ];
             
             $displayStatus = $statusMap[$newStatus] ?? $newStatus;
+            
+            // Ne pas envoyer d'email pour le statut "En cours"
+            if ($displayStatus === 'En cours') {
+                return;
+            }
             
             // Préparer les données de la réservation
             $reservationData = [
@@ -896,16 +898,16 @@ class ReservationController extends AbstractController
                 $reservationData['to'] = $reservation->getArrival();
             }
 
-            // Envoyer la notification
-            $this->whatsAppService->sendStatusUpdate(
-                $user->getPhoneNumber(),
+            // Envoyer la notification email
+            $this->emailService->sendStatusUpdate(
+                $user->getEmail(),
                 $reservationData,
                 $displayStatus
             );
 
         } catch (\Exception $e) {
             // Log l'erreur mais ne pas faire échouer la mise à jour
-            error_log('Erreur envoi WhatsApp changement statut: ' . $e->getMessage());
+            error_log('Erreur envoi email changement statut: ' . $e->getMessage());
         }
     }
 }
