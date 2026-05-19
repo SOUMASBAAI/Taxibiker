@@ -52,7 +52,7 @@ export default function AdminHeader() {
                 to="/admin/dashboard"
                 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent hover:from-blue-400 hover:to-blue-300 transition-all duration-300"
               >
-                TAXIBIKER
+                TAXI BIKER PARIS
               </Link>
               <p className="text-xs text-blue-300 -mt-1">Administration</p>
             </div>

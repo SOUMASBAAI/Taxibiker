@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaPlane, FaTrain } from "react-icons/fa";
 import { buildApiUrl } from "../config/api.js";
+import { pricingInfoCards } from "../config/pricingInfo.js";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import {
@@ -372,12 +373,42 @@ export default function ReservationPage() {
 
   const totalPrice = priceBreakdown?.totalPrice || null;
 
-  // Clear departure transport reference when transport is deselected
+  // Clear transport references when transport type is deselected
   React.useEffect(() => {
     if (!transportPickup) {
       setPickupTransportRef("");
     }
   }, [transportPickup]);
+
+  React.useEffect(() => {
+    if (!transportDrop) {
+      setDropTransportRef("");
+    }
+  }, [transportDrop]);
+
+  const validateTransportRefs = () => {
+    if (transportPickup && !pickupTransportRef.trim()) {
+      alert(
+        transportPickup === "plane"
+          ? "Veuillez renseigner le numéro de vol (départ)."
+          : "Veuillez renseigner le numéro de train (départ)."
+      );
+      return false;
+    }
+    if (
+      tripType === "classic" &&
+      transportDrop &&
+      !dropTransportRef.trim()
+    ) {
+      alert(
+        transportDrop === "plane"
+          ? "Veuillez renseigner le numéro de vol (arrivée)."
+          : "Veuillez renseigner le numéro de train (arrivée)."
+      );
+      return false;
+    }
+    return true;
+  };
 
   // Handle trip type change
   const handleTripTypeChange = (type) => {
@@ -394,7 +425,11 @@ export default function ReservationPage() {
   };
 
   // Transport suggestions data
-  const airports = ["Aéroport Charles de Gaulle (CDG)", "Aéroport Orly (ORY)"];
+  const airports = [
+    "Aéroport Charles de Gaulle (CDG)",
+    "Aéroport Orly (ORY)",
+    "Aéroport du Bourget (LBG)",
+  ];
 
   const trainStations = [
     "Gare du Nord",
@@ -1321,7 +1356,8 @@ export default function ReservationPage() {
               <label className="block text-sm mb-1 text-white">
                 {transportPickup === "plane"
                   ? "Numéro de vol"
-                  : "Numéro de train"}
+                  : "Numéro de train"}{" "}
+                <span className="text-orange-400">*</span>
               </label>
               <input
                 type="text"
@@ -1330,6 +1366,7 @@ export default function ReservationPage() {
                 placeholder={
                   transportPickup === "plane" ? "ex: AF1234" : "ex: TGV 8421"
                 }
+                required
                 className="w-full p-2 rounded bg-gray-900 border border-gray-700 text-sm text-white"
               />
             </div>
@@ -1421,6 +1458,30 @@ export default function ReservationPage() {
                       ))}
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Drop transport reference (flight/train number) */}
+              {transportDrop && (
+                <div className="mt-2">
+                  <label className="block text-sm mb-1 text-white">
+                    {transportDrop === "plane"
+                      ? "Numéro de vol"
+                      : "Numéro de train"}{" "}
+                    <span className="text-orange-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={dropTransportRef}
+                    onChange={(e) => setDropTransportRef(e.target.value)}
+                    placeholder={
+                      transportDrop === "plane"
+                        ? "ex: AF1234"
+                        : "ex: TGV 8421"
+                    }
+                    required
+                    className="w-full p-2 rounded bg-gray-900 border border-gray-700 text-sm text-white"
+                  />
                 </div>
               )}
             </>
@@ -1645,6 +1706,10 @@ export default function ReservationPage() {
                 return;
               }
 
+              if (!validateTransportRefs()) {
+                return;
+              }
+
               // Créer la réservation
               try {
                 // Combiner date et heure
@@ -1739,32 +1804,7 @@ export default function ReservationPage() {
         </h2>
 
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {[
-            {
-              title: "Course de dernière minute",
-              text: "Nous nous adaptons à vos besoins pour toute réservation rapide. Une majoration de 20€ sera appliquée.",
-            },
-            {
-              title: "Chauffeur à disposition",
-              text: "Profitez d’un chauffeur dédié pour vos trajets afin de ne pas vous soucier du temps entre vos rendez-vous.",
-            },
-            {
-              title: "Bagages supplémentaires",
-              text: "Certaines motos GOLDWING peuvent transporter 1 valise de 25kg + 1 cabine de 10kg. Option disponible sur réservation pour 15€.",
-            },
-            {
-              title: "Trajets hors formule",
-              text: "Toutes destinations possibles. Tarif : 2,50€/km + prise en charge (30€ jusqu’à 40km, 50€ au-delà). Demandez un devis gratuit.",
-            },
-            {
-              title: "Délai d’attente",
-              text: "10 minutes d’attente offertes, puis 1€/minute supplémentaire.",
-            },
-            {
-              title: "Annulation",
-              text: "Annulez jusqu’à 24h avant départ sans frais. Entre 24h et 1h : 30€. Moins d’1h : montant total de la course.",
-            },
-          ].map((card, idx) => (
+          {pricingInfoCards.map((card, idx) => (
             <div
               key={idx}
               className="backdrop-blur-md border border-white/20 rounded-xl p-5 shadow-lg hover:shadow-xl transition"

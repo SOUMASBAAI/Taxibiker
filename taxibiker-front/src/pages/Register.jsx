@@ -99,7 +99,7 @@ export default function Register() {
               Créer un compte
             </h1>
             <p className="text-gray-400 text-lg">
-              Rejoignez la communauté TaxiBiker
+              Rejoignez la communauté Taxi Biker Paris
             </p>
           </div>
 
@@ -331,7 +331,7 @@ export default function Register() {
                   >
                     politique de confidentialité
                   </Link>{" "}
-                  de TaxiBikerParis.
+                  de Taxi Biker Paris.
                 </label>
               </div>
             </div>

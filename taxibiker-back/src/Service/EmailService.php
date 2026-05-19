@@ -18,7 +18,7 @@ class EmailService
         private Environment $twig,
         LoggerInterface $logger,
         private string $fromEmail = 'contact@taxibikerparis.com',
-        private string $fromName = 'TaxiBikerParis'
+        private string $fromName = 'Taxi Biker Paris'
     ) {
         $this->logger = $logger;
         $this->isEnabled = $mailer !== null;
@@ -56,7 +56,7 @@ class EmailService
             $email = (new Email())
                 ->from(new Address($this->fromEmail, $this->fromName))
                 ->to($toEmail)
-                ->subject('TaxiBikerParis - Confirmation de votre réservation')
+                ->subject('Taxi Biker Paris - Confirmation de votre réservation')
                 ->html($htmlContent);
 
             $this->mailer->send($email);
@@ -90,19 +90,21 @@ class EmailService
         }
 
         try {
-            $subjectMap = [
-                'Acceptée'  => 'Votre réservation est confirmée !',
-                'Refusée'   => 'Votre réservation a été annulée',
-                'En cours'  => 'Votre course est en cours',
-                'Terminée'  => 'Votre course est terminée',
-            ];
-
-            $subject = 'TaxiBikerParis - ' . ($subjectMap[$newStatus] ?? "Mise à jour de votre réservation");
-
-            $htmlContent = $this->twig->render('emails/reservation_status_update.html.twig', [
-                ...$reservationData,
-                'status' => $newStatus,
-            ]);
+            if ($newStatus === 'Acceptée') {
+                $subject = 'Confirmation de transport - Taxi Biker Paris';
+                $htmlContent = $this->twig->render('emails/transport_confirmation.html.twig', $reservationData);
+            } else {
+                $subjectMap = [
+                    'Refusée'   => 'Votre réservation a été annulée',
+                    'En cours'  => 'Votre course est en cours',
+                    'Terminée'  => 'Votre course est terminée',
+                ];
+                $subject = 'Taxi Biker Paris - ' . ($subjectMap[$newStatus] ?? "Mise à jour de votre réservation");
+                $htmlContent = $this->twig->render('emails/reservation_status_update.html.twig', [
+                    ...$reservationData,
+                    'status' => $newStatus,
+                ]);
+            }
 
             $email = (new Email())
                 ->from(new Address($this->fromEmail, $this->fromName))
@@ -146,7 +148,7 @@ class EmailService
             $email = (new Email())
                 ->from(new Address($this->fromEmail, $this->fromName))
                 ->to($adminEmail)
-                ->subject('TaxiBikerParis - Nouvelle demande de course de ' . ($reservationData['firstname'] ?? '') . ' ' . ($reservationData['lastname'] ?? ''))
+                ->subject('Taxi Biker Paris - Nouvelle demande de course de ' . ($reservationData['firstname'] ?? '') . ' ' . ($reservationData['lastname'] ?? ''))
                 ->html($htmlContent);
 
             $this->mailer->send($email);
@@ -195,7 +197,7 @@ class EmailService
             $email = (new Email())
                 ->from(new Address($this->fromEmail, $this->fromName))
                 ->to($to)
-                ->subject('TaxiBikerParis - Réinitialisation de votre mot de passe')
+                ->subject('Taxi Biker Paris - Réinitialisation de votre mot de passe')
                 ->html($htmlContent);
 
             $this->mailer->send($email);
@@ -216,17 +218,65 @@ class EmailService
     }
 
     /**
+     * Envoie les identifiants de connexion à un nouveau client créé par l'admin
+     */
+    public function sendClientAccountCredentials(
+        string $to,
+        string $firstName,
+        string $email,
+        string $plainPassword
+    ): bool {
+        if (!$this->isEnabled) {
+            $this->logger->info('Email désactivé - Simulation envoi identifiants client', [
+                'to' => $to,
+                'email' => $email,
+            ]);
+            return true;
+        }
+
+        try {
+            $htmlContent = $this->twig->render('emails/client_account_created.html.twig', [
+                'firstName' => $firstName,
+                'email' => $email,
+                'password' => $plainPassword,
+                'loginUrl' => $this->getFrontendBaseUrl() . '/user/login',
+            ]);
+
+            $message = (new Email())
+                ->from(new Address($this->fromEmail, $this->fromName))
+                ->to($to)
+                ->subject('Taxi Biker Paris - Vos identifiants de connexion')
+                ->html($htmlContent);
+
+            $this->mailer->send($message);
+
+            $this->logger->info('Email identifiants client envoyé', ['to' => $to]);
+
+            return true;
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur envoi email identifiants client', [
+                'error' => $e->getMessage(),
+                'to' => $to,
+            ]);
+            return false;
+        }
+    }
+
+    /**
      * Génère l'URL de réinitialisation
      */
     private function generateResetUrl(string $token): string
     {
-        if ($_ENV['APP_ENV'] === 'prod') {
-            $baseUrl = 'https://taxibikerparis.com';
-        } else {
-            $baseUrl = $_ENV['FRONTEND_URL'] ?? $this->detectFrontendUrl();
+        return $this->getFrontendBaseUrl() . '/reset-password?token=' . $token;
+    }
+
+    private function getFrontendBaseUrl(): string
+    {
+        if (($_ENV['APP_ENV'] ?? 'dev') === 'prod') {
+            return 'https://taxibikerparis.com';
         }
-            
-        return $baseUrl . '/reset-password?token=' . $token;
+
+        return $_ENV['FRONTEND_URL'] ?? $this->detectFrontendUrl();
     }
 
     /**
@@ -280,7 +330,7 @@ class EmailService
             $email = (new Email())
                 ->from(new Address($this->fromEmail, $this->fromName))
                 ->to($to)
-                ->subject('TaxiBikerParis - Mot de passe modifié')
+                ->subject('Taxi Biker Paris - Mot de passe modifié')
                 ->html($htmlContent);
 
             $this->mailer->send($email);
@@ -337,7 +387,7 @@ class EmailService
                 ->from(new Address($this->fromEmail, $this->fromName))
                 ->to($receiver)
                 ->replyTo($fromEmail)
-                ->subject(sprintf('TaxiBikerParis - Contact de %s', $fromName))
+                ->subject(sprintf('Taxi Biker Paris - Contact de %s', $fromName))
                 ->html($htmlBody);
 
             $this->mailer->send($email);

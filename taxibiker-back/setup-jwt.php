@@ -5,7 +5,7 @@
  * Pas besoin d'OpenSSL externe !
  */
 
-echo "🔐 Configuration JWT pour TaxiBiker\n";
+echo "🔐 Configuration JWT pour Taxi Biker Paris\n";
 echo "====================================\n\n";
 
 // Créer le dossier jwt si nécessaire

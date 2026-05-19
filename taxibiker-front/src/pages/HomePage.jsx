@@ -5,6 +5,7 @@ import Footer from "../components/Footer";
 import WhatsappButton from "../components/WhatsappButton";
 import authService from "../services/authService";
 import { buildApiUrl } from "../config/api.js";
+import { pricingInfoCards } from "../config/pricingInfo.js";
 import taxiImage from "../assets/taxi.jpg";
 import casqueImg from "../assets/equipements/casque.png";
 import gantsImg from "../assets/equipements/gants.png";
@@ -233,14 +234,14 @@ export default function HomePage() {
               Qui sommes-nous ?
             </h2>
             <p className="text-gray-300 mb-4">
-              Bienvenue chez TaxiBikerParis, votre partenaire de transport privé
+              Bienvenue chez Taxi Biker Paris, votre partenaire de transport privé
               à Paris et en Île-de-France. Nous mettons à votre disposition un
               service de transport fiable, rapide et confortable, pensé pour
               répondre à tous vos besoins de déplacement qu’il s’agisse d’un
               trajet professionnel, personnel ou touristique. Notre équipe de
               chauffeurs expérimentés et courtois s’engage à vous offrir une
               expérience de voyage sécurisée, agréable et ponctuelle. Chez
-              TaxiBikerParis, nous croyons que le transport ne se résume pas à
+              Taxi Biker Paris, nous croyons que le transport ne se résume pas à
               un simple déplacement. C’est une véritable expérience de
               confiance, où sécurité, confort et sérénité sont au cœur de notre
               mission.
@@ -300,10 +301,30 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* Infos complémentaires */}
+        <section className="py-16 px-4 max-w-6xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center text-white">
+            Infos complémentaires
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {pricingInfoCards.map((card, idx) => (
+              <div
+                key={idx}
+                className="backdrop-blur-md border border-white/20 rounded-xl p-5 shadow-lg hover:shadow-xl transition bg-gray-900/40"
+              >
+                <h3 className="text-lg font-bold mb-2 text-[#DD5212]">
+                  {card.title}
+                </h3>
+                <p className="text-sm text-gray-300">{card.text}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* Formulaire de contact */}
         <section id="contact" className="py-16 px-4 max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-4 text-white">
-            Contactez TaxiBiker
+            Contactez Taxi Biker Paris
           </h2>
           <p className="text-gray-300 text-center mb-8">
             Remplissez le formulaire et nous vous répondrons rapidement.

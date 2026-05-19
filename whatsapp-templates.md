@@ -1,4 +1,4 @@
-# WhatsApp Business API - Message Templates for TaxiBiker
+# WhatsApp Business API - Message Templates for Taxi Biker Paris
 
 ## Template 1: Reservation Confirmation
 
@@ -7,7 +7,7 @@
 **Language:** French (fr)
 
 ```
-🏍️ *TAXIBIKER - Confirmation de réservation*
+🏍️ *TAXI BIKER PARIS - Confirmation de réservation*
 
 Bonjour {{1}},
 
@@ -32,7 +32,7 @@ Merci de votre confiance ! 🙏
 **Language:** French (fr)
 
 ```
-🏍️ *TAXIBIKER - Mise à jour*
+🏍️ *TAXI BIKER PARIS - Mise à jour*
 
 Bonjour {{1}},
 
@@ -52,7 +52,7 @@ Nous serons là à l'heure ! 🏍️
 **Language:** French (fr)
 
 ```
-🏍️ *TAXIBIKER - Mise à jour*
+🏍️ *TAXI BIKER PARIS - Mise à jour*
 
 Bonjour {{1}},
 

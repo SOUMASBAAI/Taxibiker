@@ -8,6 +8,13 @@ parameters:
     admin.notification_email: "%env(default:admin_email_default:ADMIN_NOTIFICATION_EMAIL)%"
     admin_email_default: "infos.taxi.biker@gmail.com"
 
+    # Informations entreprise (emails confirmation transport)
+    company.name: "TAXI BIKER PARIS"
+    company.rcs: "917 876 773"
+    company.phone: "+(33)7 88 26 83 54"
+    company.email: "Contact@taxibikerparis.com"
+    company.driver_name: "Cédric"
+
     # Configuration email par défaut pour développement
     mailer.dsn: "%env(default:mailer_default:MAILER_DSN)%"
     mailer_default: "smtp://contact%40taxibikerparis.com:Taxibiker!123@mail.taxibikerparis.com:587"

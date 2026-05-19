@@ -1,4 +1,4 @@
-# TaxiBiker 🚴‍♂️
+# Taxi Biker Paris 🚴‍♂️
 
 Application de réservation de taxi-moto développée avec Symfony (backend) et React (frontend).
 

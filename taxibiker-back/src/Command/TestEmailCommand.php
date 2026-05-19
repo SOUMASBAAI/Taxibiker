@@ -36,7 +36,7 @@ class TestEmailCommand extends Command
         $email = $input->getArgument('email');
         $firstname = $input->getArgument('firstname');
 
-        $io->title('Test d\'envoi d\'email TaxiBiker');
+        $io->title('Test d\'envoi d\'email Taxi Biker Paris');
 
         // Générer un token de test
         $testToken = bin2hex(random_bytes(32));

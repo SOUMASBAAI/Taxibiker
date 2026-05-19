@@ -64,7 +64,13 @@ export default function AdminClients() {
 
       if (result.success) {
         setClients((prev) => [...prev, result.client]);
-        showNotification("success", "Client ajouté avec succès");
+        showNotification(
+          "success",
+          result.message ||
+            (result.email_sent
+              ? "Client ajouté — identifiants envoyés par email"
+              : "Client ajouté — email non envoyé (vérifiez la config mail)")
+        );
       } else {
         showNotification(
           "error",

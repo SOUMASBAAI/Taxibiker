@@ -19,6 +19,7 @@ import {
 import AdminHeader from "../components/admin/AdminHeader";
 import ReservationCard from "../components/admin/ReservationCard";
 import ReservationModal from "../components/admin/ReservationModal";
+import EditReservationModal from "../Modal/EditReservationModal";
 // import authService from "../services/authService";
 
 // Weekly Calendar Component
@@ -1275,6 +1276,7 @@ export default function AdminDashboard() {
   const [clients, setClients] = useState([]);
   const [reservations, setReservations] = useState([]);
   const [selectedReservation, setSelectedReservation] = useState(null);
+  const [editingReservation, setEditingReservation] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -1338,6 +1340,7 @@ export default function AdminDashboard() {
           price: parseFloat(res.price),
           type: res.type,
           hours: res.hours || null,
+          paymentMethod: res.paymentMethod || "immediate",
         }));
 
         setReservations(formattedReservations);
@@ -1388,26 +1391,100 @@ export default function AdminDashboard() {
   }, []);
 
   // Réservations
-  const handleUpdateReservation = (updated) => {
-    setReservations((prev) => {
-      const updatedReservations = prev.map((r) =>
-        r.id === updated.id
-          ? { ...updated, price: updated.price + (updated.luggage ? 15 : 0) }
-          : r
+  const handleUpdateReservation = async (updated) => {
+    try {
+      const dateTimeStr = `${updated.date}T${updated.time}:00`;
+      const body = {
+        type: updated.type,
+        date: new Date(dateTimeStr).toISOString(),
+        excessBaggage: updated.luggage,
+        price: updated.price,
+      };
+      if (updated.type === "hourly") {
+        body.hours = updated.hours;
+      } else {
+        body.stop = updated.stop || null;
+      }
+
+      const response = await authService.authenticatedRequest(
+        buildApiUrl(`admin/reservations/${updated.id}`),
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }
       );
 
-      // Sort reservations by date and time
-      return updatedReservations.sort((a, b) => {
-        if (a.date !== b.date) {
-          return a.date.localeCompare(b.date);
-        }
-        return a.time.localeCompare(b.time);
+      const result = await response.json();
+
+      if (!result.success) {
+        alert(result.error || "Erreur lors de la modification");
+        return;
+      }
+
+      const apiRes = result.reservation;
+      const [datePart, timePart] = apiRes.date.split(" ");
+      const formatted = {
+        ...updated,
+        date: datePart,
+        time: timePart?.substring(0, 5) || updated.time,
+        luggage: apiRes.excessBaggage,
+        stop: apiRes.stop || "",
+        price: parseFloat(apiRes.price),
+        hours: apiRes.hours ?? updated.hours,
+        status: mapApiStatusToUi(apiRes.status),
+      };
+
+      setReservations((prev) => {
+        const updatedReservations = prev.map((r) =>
+          r.id === updated.id ? formatted : r
+        );
+        return updatedReservations.sort((a, b) => {
+          if (a.date !== b.date) {
+            return a.date.localeCompare(b.date);
+          }
+          return a.time.localeCompare(b.time);
+        });
       });
-    });
+      setEditingReservation(null);
+      setSelectedReservation(null);
+    } catch (error) {
+      console.error("Erreur:", error);
+      alert("Erreur lors de la modification");
+    }
   };
   const handleCancelReservation = async (id) => {
     // Appeler handleStatusChange qui fait la mise à jour dans la BDD
     await handleStatusChange(id, "Annulée");
+  };
+
+  const handleDeleteReservation = async (id, type) => {
+    try {
+      const response = await authService.authenticatedRequest(
+        buildApiUrl(`admin/reservations/${id}`),
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ type }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.success) {
+        setReservations((prev) =>
+          prev.filter((r) => !(r.id === id && r.type === type))
+        );
+        setSelectedReservation(null);
+      } else {
+        alert("Erreur lors de la suppression: " + (result.error || "Erreur inconnue"));
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      alert("Erreur lors de la suppression de la course");
+    }
   };
 
   const handleStatusChange = async (id, newStatus, type) => {
@@ -1541,7 +1618,7 @@ export default function AdminDashboard() {
                 Tableau de Bord
               </h1>
               <p className="text-blue-200 text-lg">
-                Vue d'ensemble de votre activité TaxiBiker
+                Vue d'ensemble de votre activité Taxi Biker Paris
               </p>
             </div>
           </div>
@@ -1778,9 +1855,22 @@ export default function AdminDashboard() {
         <ReservationModal
           reservation={selectedReservation}
           onClose={() => setSelectedReservation(null)}
-          onUpdate={handleUpdateReservation}
+          onEdit={(reservation) => {
+            setEditingReservation(reservation);
+            setSelectedReservation(null);
+          }}
           onCancel={handleCancelReservation}
           onStatusChange={handleStatusChange}
+          onDelete={handleDeleteReservation}
+        />
+      )}
+
+      {editingReservation && (
+        <EditReservationModal
+          isAdmin
+          reservation={editingReservation}
+          onClose={() => setEditingReservation(null)}
+          onUpdate={handleUpdateReservation}
         />
       )}
 

@@ -1,4 +1,4 @@
-# Configuration Email PlanetHoster pour TaxiBiker
+# Configuration Email PlanetHoster pour Taxi Biker Paris
 
 ## 📧 Configuration SMTP PlanetHoster
 
@@ -25,7 +25,7 @@
 
 #### Pour la production (taxibikerparis.com)
 
-Modifiez votre fichier `planethoster.env.TAXIBIKER` :
+Modifiez votre fichier `planethoster.env.TAXI BIKER PARIS` :
 
 ```bash
 # Configuration email SMTP Hostinger
@@ -60,7 +60,7 @@ Modifiez le service EmailService pour utiliser votre domaine :
 ```php
 // Dans EmailService.php, ligne ~15
 private string $fromEmail = 'noreply@taxibikerparis.com',
-private string $fromName = 'TaxiBiker Paris'
+private string $fromName = 'Taxi Biker Paris'
 ```
 
 ### Étape 6 : Test de la configuration
@@ -114,7 +114,7 @@ tail -f var/log/dev.log | grep -i email
 - [ ] ✅ Test effectué sur la page "Mot de passe oublié"
 - [ ] ✅ Email reçu et lien fonctionnel
 
-## 🎯 Configuration recommandée pour TaxiBiker
+## 🎯 Configuration recommandée pour Taxi Biker Paris
 
 ```bash
 # Configuration finale recommandée
@@ -129,7 +129,7 @@ MAILER_DSN=smtp://noreply%40taxibikerparis.com:VOTRE_MOT_DE_PASSE@smtp.hostinger
 Les emails utilisent votre domaine et sont déjà configurés avec :
 
 - **Expéditeur** : noreply@taxibikerparis.com
-- **Nom** : TaxiBiker Paris
+- **Nom** : Taxi Biker Paris
 - **Design** : Templates HTML professionnels
 - **Liens** : Pointent vers taxibikerparis.com
 

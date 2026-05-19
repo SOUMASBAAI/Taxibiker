@@ -1,4 +1,4 @@
-# Configuration Email PlanetHoster pour TaxiBiker
+# Configuration Email PlanetHoster pour Taxi Biker Paris
 
 ## 📧 Configuration SMTP PlanetHoster
 
@@ -24,7 +24,7 @@ Vous avez déjà configuré :
 #### Configuration actuelle (correcte) :
 
 ```bash
-# Dans planethoster.env.TAXIBIKER
+# Dans planethoster.env.TAXI BIKER PARIS
 MAILER_DSN=smtp://contact%40taxibikerparis.com:Taxibiker!123@mail.planethoster.com:587
 ```
 
@@ -45,7 +45,7 @@ php bin/console app:send-test-email contact@taxibikerparis.com
 Une fois l'email de test réussi, testez le système complet :
 
 ```bash
-php bin/console app:test-email contact@taxibikerparis.com "Test TaxiBiker"
+php bin/console app:test-email contact@taxibikerparis.com "Test Taxi Biker Paris"
 ```
 
 ## 🔧 Paramètres PlanetHoster
@@ -71,7 +71,7 @@ MAILER_DSN=smtp://contact%40taxibikerparis.com:Taxibiker!123@mail.planethoster.c
 | **Port SSL**         | 465                     | 465                  | 465                  |
 | **Authentification** | Email complet           | Email complet        | Email + App Password |
 
-## 🎯 Configuration finale TaxiBiker
+## 🎯 Configuration finale Taxi Biker Paris
 
 Votre configuration est maintenant correcte :
 

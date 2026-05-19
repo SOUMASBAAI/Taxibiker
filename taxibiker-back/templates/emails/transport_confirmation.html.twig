@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmation de transport</title>
+    <style>
+        body {
+            font-family: Georgia, 'Times New Roman', Times, serif;
+            color: #000;
+            background: #fff;
+            margin: 0;
+            padding: 24px;
+            line-height: 1.5;
+            font-size: 15px;
+        }
+        .document {
+            max-width: 560px;
+            margin: 0 auto;
+        }
+        .title-block {
+            text-align: center;
+            margin: 0 0 20px;
+        }
+        .title-block h1 {
+            font-size: 18px;
+            font-weight: normal;
+            letter-spacing: 0.5px;
+            margin: 8px 0;
+        }
+        .line {
+            border: none;
+            border-top: 2px solid #000;
+            margin: 0;
+        }
+        .line-thick {
+            border-top-width: 3px;
+            margin-top: 28px;
+        }
+        .reference {
+            margin: 16px 0 20px;
+            font-size: 15px;
+        }
+        .field {
+            margin: 0 0 6px;
+        }
+        .field strong {
+            font-weight: bold;
+        }
+        .contact-link {
+            color: #c2185b;
+            text-decoration: none;
+        }
+        .footer-legal {
+            margin-top: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .footer-company {
+            margin-top: 16px;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+        .footer-company .company-name {
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="document">
+        <div class="title-block">
+            <hr class="line">
+            <h1>Confirmation de transport</h1>
+            <hr class="line">
+        </div>
+
+        <p class="reference"><strong>N. {{ referenceNumber }}</strong></p>
+
+        <p class="field"><strong>Client :</strong> {{ firstname }} {{ lastname|upper }}</p>
+        <p class="field">
+            <strong>tel :</strong>
+            {% if phone %}
+                <a href="tel:{{ phone|replace({' ': '', '-': '', '(': '', ')': ''}) }}" class="contact-link">{{ phone }}</a>
+            {% else %}
+                —
+            {% endif %}
+        </p>
+
+        <p class="field"><strong>Date :</strong> {{ date }}</p>
+        <p class="field"><strong>Heure :</strong> {{ time }}</p>
+        <p class="field"><strong>Lieu de départ :</strong> {{ from|default('—') }}</p>
+        <p class="field"><strong>Lieu de dépôt :</strong> {{ to|default('—') }}</p>
+        {% if infos is defined and infos %}
+        <p class="field"><strong>infos :</strong> {{ infos }}</p>
+        {% endif %}
+        {% if stop is defined and stop %}
+        <p class="field"><strong>Stop :</strong> {{ stop }}</p>
+        {% endif %}
+
+        <p class="field" style="margin-top: 14px;"><strong>Prix de la prestation :</strong> {{ price }}€ TTC</p>
+        <p class="field"><em>Dont 10% de tva inclus</em></p>
+        <p class="field"><strong>Paiement :</strong> {{ paymentLabel }}</p>
+
+        <p class="field" style="margin-top: 14px;">
+            <strong>Chauffeur pour cette réservation :</strong> {{ driverName }}
+        </p>
+
+        <hr class="line line-thick">
+
+        <div class="footer-legal">
+            <p>Ordre de mission (arrêté du 06 - 01 - 1993 art 3)</p>
+            <p>Transport réservé par l'entreprise</p>
+        </div>
+
+        <div class="footer-company">
+            <p class="company-name">{{ companyName }}</p>
+            <p>RCS {{ companyRcs }}</p>
+            <p>
+                <a href="tel:{{ companyPhone|replace({' ': '', '-': '', '(': '', ')': ''}) }}" class="contact-link">{{ companyPhone }}</a>
+            </p>
+            <p>
+                <a href="mailto:{{ companyEmail }}" class="contact-link">{{ companyEmail }}</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -165,14 +165,21 @@ class ReservationController extends AbstractController
                 $client->setLastName($data['lastname']);
                 $client->setEmail($data['email']);
                 $client->setPhoneNumber($data['phone']);
-                // Générer un mot de passe aléatoire (l'utilisateur pourra le réinitialiser)
-                $randomPassword = bin2hex(random_bytes(16));
+                // Générer un mot de passe aléatoire envoyé par email au client
+                $randomPassword = bin2hex(random_bytes(8));
                 $hashedPassword = $this->passwordHasher->hashPassword($client, $randomPassword);
                 $client->setPassword($hashedPassword);
                 $client->setRoles(['ROLE_USER']);
                 
                 $this->entityManager->persist($client);
                 $this->entityManager->flush();
+
+                $this->emailService->sendClientAccountCredentials(
+                    $client->getEmail(),
+                    $client->getFirstName(),
+                    $client->getEmail(),
+                    $randomPassword
+                );
             } else {
                 // Mettre à jour les informations si nécessaire
                 if ($client->getFirstName() !== $data['firstname']) {
@@ -511,30 +518,27 @@ class ReservationController extends AbstractController
     #[Route('/admin/reservations/{id}', name: 'admin_update_reservation', methods: ['PUT', 'PATCH'])]
     public function updateReservation(Request $request, int $id): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
+        $data = json_decode($request->getContent(), true) ?? [];
+        $type = $data['type'] ?? null;
 
-        // Chercher la réservation
-        $reservation = $this->entityManager
-            ->getRepository(ClassicReservation::class)
-            ->find($id);
-
-        $isClassic = true;
-        if (!$reservation) {
-            $reservation = $this->entityManager
-                ->getRepository(FlatRateBooking::class)
-                ->find($id);
-            $isClassic = false;
-        }
+        $reservation = $this->findReservationByIdAndType($id, $type);
 
         if (!$reservation) {
             return $this->json(['error' => 'Réservation non trouvée'], Response::HTTP_NOT_FOUND);
         }
 
+        $isClassic = $reservation instanceof ClassicReservation;
+        $allowedStatuses = ['pending', 'confirmed', 'in_progress'];
+
+        if (!in_array($reservation->getStatut(), $allowedStatuses, true)) {
+            return $this->json([
+                'error' => 'Seules les réservations à confirmer, acceptées ou en cours peuvent être modifiées',
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
         try {
-            // Mettre à jour les champs modifiables
             if (isset($data['date'])) {
-                $date = new \DateTime($data['date']);
-                $reservation->setDate($date);
+                $reservation->setDate(new \DateTime($data['date']));
             }
 
             if (isset($data['excessBaggage'])) {
@@ -545,33 +549,77 @@ class ReservationController extends AbstractController
                 $reservation->setPrice((string) $data['price']);
             }
 
-            if (isset($data['status'])) {
-                $statusMap = [
-                    'À confirmer' => 'pending',
-                    'En attente' => 'pending',
-                    'Acceptée' => 'confirmed',
-                    'En cours' => 'in_progress',
-                    'Terminée' => 'completed',
-                    'Annulée' => 'cancelled',
-                    'Refusée' => 'cancelled'
-                ];
-                $backendStatus = $statusMap[$data['status']] ?? $data['status'];
-                $reservation->setStatut($backendStatus);
+            if ($isClassic && array_key_exists('stop', $data)) {
+                $reservation->setStop($data['stop'] ?: null);
             }
 
-            if ($isClassic && isset($data['stop'])) {
-                $reservation->setStop($data['stop']);
+            if (!$isClassic && isset($data['hours'])) {
+                $reservation->setNumberOfHours((int) $data['hours']);
             }
 
             $this->entityManager->flush();
 
+            $response = [
+                'id' => $reservation->getId(),
+                'type' => $isClassic ? 'classic' : 'hourly',
+                'departure' => $reservation->getDeparture(),
+                'arrival' => $reservation->getArrival(),
+                'date' => $reservation->getDate()->format('Y-m-d H:i:s'),
+                'price' => $reservation->getPrice(),
+                'status' => $reservation->getStatut(),
+                'excessBaggage' => $reservation->isExcessBaggage(),
+            ];
+
+            if ($isClassic) {
+                $response['stop'] = $reservation->getStop();
+            } else {
+                $response['hours'] = $reservation->getNumberOfHours();
+            }
+
             return $this->json([
                 'success' => true,
-                'message' => 'Réservation mise à jour avec succès'
+                'message' => 'Réservation mise à jour avec succès',
+                'reservation' => $response,
             ]);
         } catch (\Exception $e) {
             return $this->json([
                 'error' => 'Erreur lors de la mise à jour: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Supprimer une réservation terminée (Admin)
+     */
+    #[Route('/admin/reservations/{id}', name: 'admin_delete_reservation', methods: ['DELETE'])]
+    public function deleteReservation(Request $request, int $id): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true) ?? [];
+        $type = $data['type'] ?? $request->query->get('type');
+
+        $reservation = $this->findReservationByIdAndType($id, $type);
+
+        if (!$reservation) {
+            return $this->json(['error' => 'Réservation non trouvée'], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($reservation->getStatut() !== 'completed') {
+            return $this->json([
+                'error' => 'Seules les courses terminées peuvent être supprimées',
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        try {
+            $this->entityManager->remove($reservation);
+            $this->entityManager->flush();
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Course supprimée avec succès',
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'error' => 'Erreur lors de la suppression: ' . $e->getMessage(),
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -829,10 +877,15 @@ class ReservationController extends AbstractController
 
             // Notification email au client
             error_log('Envoi email client...');
-            $result = $this->emailService->sendReservationConfirmation(
-                $user->getEmail(),
-                $reservationData
-            );
+            if ($reservation->getStatut() === 'confirmed') {
+                $this->sendStatusUpdateNotification($reservation, 'confirmed');
+                $result = true;
+            } else {
+                $result = $this->emailService->sendReservationConfirmation(
+                    $user->getEmail(),
+                    $reservationData
+                );
+            }
             error_log('Résultat envoi email client: ' . ($result ? 'SUCCÈS' : 'ÉCHEC'));
 
             // Notification email à l'admin
@@ -880,22 +933,34 @@ class ReservationController extends AbstractController
                 return;
             }
             
+            $departure = $reservation->getDeparture();
+            $arrival = $reservation->getArrival();
+            $reservationDate = $reservation->getDate();
+
             // Préparer les données de la réservation
             $reservationData = [
                 'firstname' => $user->getFirstName(),
                 'lastname' => $user->getLastName(),
-                'date' => $reservation->getDate()->format('d/m/Y'),
-                'time' => $reservation->getDate()->format('H:i'),
-                'price' => $reservation->getPrice()
+                'phone' => $user->getPhoneNumber(),
+                'referenceNumber' => $reservation->getId(),
+                'date' => $reservationDate->format('d/m/y'),
+                'time' => $this->formatEmailTime($reservationDate),
+                'price' => $reservation->getPrice(),
+                'from' => $departure,
+                'to' => $arrival,
+                'infos' => $this->buildTransportInfos($departure, $arrival),
+                'paymentLabel' => $this->mapPaymentMethodLabel(
+                    method_exists($reservation, 'getPaymentMethod') ? $reservation->getPaymentMethod() : 'immediate'
+                ),
+                'driverName' => $this->parameterBag->get('company.driver_name'),
+                'companyName' => $this->parameterBag->get('company.name'),
+                'companyRcs' => $this->parameterBag->get('company.rcs'),
+                'companyPhone' => $this->parameterBag->get('company.phone'),
+                'companyEmail' => $this->parameterBag->get('company.email'),
             ];
 
-            // Ajouter les données spécifiques selon le type
             if ($reservation instanceof ClassicReservation) {
-                $reservationData['from'] = $reservation->getDeparture();
-                $reservationData['to'] = $reservation->getArrival();
-            } elseif ($reservation instanceof FlatRateBooking) {
-                $reservationData['from'] = $reservation->getDeparture();
-                $reservationData['to'] = $reservation->getArrival();
+                $reservationData['stop'] = $reservation->getStop();
             }
 
             // Envoyer la notification email
@@ -909,6 +974,54 @@ class ReservationController extends AbstractController
             // Log l'erreur mais ne pas faire échouer la mise à jour
             error_log('Erreur envoi email changement statut: ' . $e->getMessage());
         }
+    }
+
+    private function formatEmailTime(\DateTimeInterface $date): string
+    {
+        $minutes = (int) $date->format('i');
+        $hour = (int) $date->format('G');
+
+        return $minutes === 0 ? $hour . 'h' : $hour . 'h' . $date->format('i');
+    }
+
+    private function mapPaymentMethodLabel(string $paymentMethod): string
+    {
+        return match ($paymentMethod) {
+            'credit' => 'en compte',
+            default => 'à la course',
+        };
+    }
+
+    private function buildTransportInfos(?string $departure, ?string $arrival): string
+    {
+        $locations = strtolower(($departure ?? '') . ' ' . ($arrival ?? ''));
+
+        if (preg_match('/cdg|orly|bourget|lbg|aéroport|aeroport|airport|terminal/i', $locations)) {
+            return '✈️';
+        }
+
+        if (preg_match('/gare|sncf|montparnasse|nord|lyon|est|ouest|stade de france|train/i', $locations)) {
+            return '🚆';
+        }
+
+        return '';
+    }
+
+    private function findReservationByIdAndType(int $id, ?string $type): ClassicReservation|FlatRateBooking|null
+    {
+        if ($type === 'hourly') {
+            $reservation = $this->entityManager->getRepository(FlatRateBooking::class)->find($id);
+            return $reservation ?? $this->entityManager->getRepository(ClassicReservation::class)->find($id);
+        }
+
+        if ($type === 'classic') {
+            $reservation = $this->entityManager->getRepository(ClassicReservation::class)->find($id);
+            return $reservation ?? $this->entityManager->getRepository(FlatRateBooking::class)->find($id);
+        }
+
+        $reservation = $this->entityManager->getRepository(ClassicReservation::class)->find($id);
+
+        return $reservation ?? $this->entityManager->getRepository(FlatRateBooking::class)->find($id);
     }
 }
 

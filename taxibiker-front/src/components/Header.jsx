@@ -137,7 +137,7 @@ export default function Header() {
             <div className="flex items-center gap-3">
              
               <div>
-                <h2 className="text-lg font-bold text-white">TAXIBIKERPARIS</h2>
+                <h2 className="text-lg font-bold text-white">TAXI BIKER PARIS</h2>
                 <p className="text-xs text-gray-400">Menu</p>
               </div>
             </div>

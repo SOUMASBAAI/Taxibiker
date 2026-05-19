@@ -1,4 +1,5 @@
-import { Mail, Phone, Instagram } from "lucide-react";
+import { Mail, Phone, MapPin } from "lucide-react";
+import { FaInstagram, FaSnapchat, FaTiktok } from "react-icons/fa";
 import { Link } from "react-router-dom"; // <-- IMPORT IMPORTANT
 
 export default function Footer() {
@@ -8,7 +9,7 @@ export default function Footer() {
         
         {/* Logo + Slogan */}
         <div>
-          <h2 className="text-xl font-bold mb-2"> TAXIBIKERPARIS</h2>
+          <h2 className="text-xl font-bold mb-2"> TAXI BIKER PARIS</h2>
           <p className="text-gray-400 text-sm italic">
             "Votre trajet, notre priorité"
           </p>
@@ -39,9 +40,13 @@ export default function Footer() {
               <Phone size={16} className="text-gray-400" />
               07 88 26 83 54
             </li>
-            <li className="flex items-center gap-2">
-              <Mail size={16} className="text-gray-400" />
+            <li className="flex items-start gap-2">
+              <Mail size={16} className="text-gray-400 shrink-0 mt-0.5" />
               contact@taxibikerparis.com
+            </li>
+            <li className="flex items-start gap-2">
+              <MapPin size={16} className="text-gray-400 shrink-0 mt-0.5" />
+              <span>6 rue d&apos;Armaillé, 75017 Paris</span>
             </li>
           </ul>
         </div>
@@ -49,21 +54,47 @@ export default function Footer() {
         {/* Réseaux */}
         <div>
           <h3 className="font-semibold mb-2">Suivez-nous</h3>
-          <a
-            href="https://www.instagram.com/taxi.biker.paris/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 text-gray-300 hover:text-[#DD5212] transition text-sm"
-          >
-            <Instagram size={18} />
-            Instagram
-          </a>
+          <ul className="space-y-2">
+            <li>
+              <a
+                href="https://www.instagram.com/taxi.biker.paris/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-gray-300 hover:text-[#DD5212] transition text-sm"
+              >
+                <FaInstagram size={18} />
+                Instagram
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://snapchat.com/t/cYY6FCb2"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-gray-300 hover:text-[#DD5212] transition text-sm"
+              >
+                <FaSnapchat size={18} />
+                Snapchat
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://www.tiktok.com/@taxibikerparis?_r=1&_t=ZN-96V5bFNqKX5"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-gray-300 hover:text-[#DD5212] transition text-sm"
+              >
+                <FaTiktok size={18} />
+                TikTok
+              </a>
+            </li>
+          </ul>
         </div>
       </div>
 
       {/* Bas de page */}
       <div className="border-t border-white/10 mt-8 pt-4 text-center text-xs text-gray-400">
-        <p>© 2026 TAXIBIKERPARIS. Tous droits réservés.</p>
+        <p>© 2026 TAXI BIKER PARIS. Tous droits réservés.</p>
         <p className="mt-1">
           Ce site est une réalisation de  <span className="text-white font-semibold">ISAKODE</span>.
         </p>

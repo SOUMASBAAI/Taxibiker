@@ -1,15 +1,26 @@
 import { useState } from "react";
+import {
+  COMPANY_INFO,
+  formatTransportDate,
+  formatTransportTime,
+  mapPaymentLabel,
+  buildTransportInfos,
+} from "../../utils/transportConfirmation";
+
+const EDITABLE_STATUSES = ["Acceptée", "À confirmer", "En cours"];
 
 export default function ReservationModal({
   reservation,
   onClose,
   onUpdate,
+  onEdit,
   onCancel,
   onStatusChange,
+  onDelete,
 }) {
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [invoiceData, setInvoiceData] = useState({
-    companyName: "TAXIBIKER Cédric",
+    companyName: "TAXI BIKER PARIS Cédric",
     address: "123 Rue de la Taxi, Paris 75001",
     phone: "01 23 45 67 89",
     email: "contact@taxibiker.fr",
@@ -25,6 +36,9 @@ export default function ReservationModal({
   const handleInvoiceChange = (field, value) => {
     setInvoiceData((prev) => ({ ...prev, [field]: value }));
   };
+
+  const transportInfos = buildTransportInfos(reservation.from, reservation.to);
+  const paymentLabel = mapPaymentLabel(reservation.paymentMethod || "immediate");
 
   const downloadInvoice = () => {
     // Create a simple HTML invoice that can be printed
@@ -156,11 +170,11 @@ export default function ReservationModal({
     `;
 
     // Create mailto link with the invoice as attachment
-    const subject = `Facture TAXIBIKER - Service du ${invoiceData.date}`;
-    const body = `Bonjour ${reservation.firstname},\n\nVeuillez trouver ci-joint votre facture pour le service de transport du ${invoiceData.date}.\n\nTotal: ${invoiceData.total}€\n\nCordialement,\nTAXIBIKER Cédric`;
+    const subject = `Facture TAXI BIKER PARIS - Service du ${invoiceData.date}`;
+    const body = `Bonjour ${reservation.firstname},\n\nVeuillez trouver ci-joint votre facture pour le service de transport du ${invoiceData.date}.\n\nTotal: ${invoiceData.total}€\n\nCordialement,\nTAXI BIKER PARIS Cédric`;
 
     // Create a temporary text file with invoice content for email attachment
-    const _invoiceText = `FACTURE TAXIBIKER Cédric
+    const _invoiceText = `FACTURE TAXI BIKER PARIS Cédric
     
 Client: ${invoiceData.clientName}
 Date du service: ${invoiceData.date} à ${invoiceData.time}
@@ -189,6 +203,103 @@ ${invoiceData.email}`;
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
       <div className="bg-[#222] p-6 rounded-2xl w-full max-w-lg text-white max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-bold mb-4">Détails de la réservation</h2>
+
+        {/* Confirmation de transport (format email client) */}
+        <div className="mb-6 rounded-lg border border-gray-600 bg-white text-black p-5 font-serif text-[15px] leading-relaxed">
+          <div className="text-center mb-4">
+            <hr className="border-t-2 border-black mb-2" />
+            <h3 className="text-lg font-normal tracking-wide">
+              Confirmation de transport
+            </h3>
+            <hr className="border-t-2 border-black mt-2" />
+          </div>
+
+          <p className="mb-4">
+            <strong>N. {reservation.id}</strong>
+          </p>
+
+          <p className="mb-1">
+            <strong>Client :</strong> {reservation.firstname}{" "}
+            {(reservation.lastname || "").toUpperCase()}
+          </p>
+          <p className="mb-3">
+            <strong>tel :</strong>{" "}
+            {reservation.phone ? (
+              <a
+                href={`tel:${reservation.phone.replace(/[\s\-()]/g, "")}`}
+                className="text-[#c2185b] hover:underline"
+              >
+                {reservation.phone}
+              </a>
+            ) : (
+              "—"
+            )}
+          </p>
+
+          <p className="mb-1">
+            <strong>Date :</strong> {formatTransportDate(reservation.date)}
+          </p>
+          <p className="mb-1">
+            <strong>Heure :</strong> {formatTransportTime(reservation.time)}
+          </p>
+          <p className="mb-1">
+            <strong>Lieu de départ :</strong> {reservation.from || "—"}
+          </p>
+          <p className="mb-1">
+            <strong>Lieu de dépôt :</strong> {reservation.to || "—"}
+          </p>
+          {transportInfos && (
+            <p className="mb-1">
+              <strong>infos :</strong> {transportInfos}
+            </p>
+          )}
+          {reservation.stop && (
+            <p className="mb-1">
+              <strong>Stop :</strong> {reservation.stop}
+            </p>
+          )}
+
+          <p className="mt-3 mb-1">
+            <strong>Prix de la prestation :</strong> {reservation.price}€ TTC
+          </p>
+          <p className="mb-1 italic text-sm">Dont 10% de tva inclus</p>
+          <p className="mb-3">
+            <strong>Paiement :</strong> {paymentLabel}
+          </p>
+
+          <p className="mb-4">
+            <strong>Chauffeur pour cette réservation :</strong>{" "}
+            {COMPANY_INFO.driverName}
+          </p>
+
+          <hr className="border-t-[3px] border-black mb-4" />
+
+          <div className="text-sm space-y-1 mb-4">
+            <p>Ordre de mission (arrêté du 06 - 01 - 1993 art 3)</p>
+            <p>Transport réservé par l&apos;entreprise</p>
+          </div>
+
+          <div className="text-sm space-y-1">
+            <p className="font-bold tracking-wide">{COMPANY_INFO.name}</p>
+            <p>RCS {COMPANY_INFO.rcs}</p>
+            <p>
+              <a
+                href={`tel:${COMPANY_INFO.phone.replace(/[\s\-()]/g, "")}`}
+                className="text-[#c2185b] hover:underline"
+              >
+                {COMPANY_INFO.phone}
+              </a>
+            </p>
+            <p>
+              <a
+                href={`mailto:${COMPANY_INFO.email}`}
+                className="text-[#c2185b] hover:underline"
+              >
+                {COMPANY_INFO.email}
+              </a>
+            </p>
+          </div>
+        </div>
 
         {/* Informations du client */}
         <div className="mb-6 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
@@ -267,7 +378,15 @@ ${invoiceData.email}`;
           <p className="text-gray-300">{reservation.status}</p>
         </div>
 
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-end gap-3 flex-wrap">
+          {onEdit && EDITABLE_STATUSES.includes(reservation.status) && (
+            <button
+              onClick={() => onEdit(reservation)}
+              className="px-4 py-2 rounded bg-orange-600 hover:bg-orange-500 transition"
+            >
+              Modifier
+            </button>
+          )}
           <button
             onClick={onClose}
             className="px-4 py-2 rounded bg-gray-600 hover:bg-gray-500 transition"
@@ -326,12 +445,31 @@ ${invoiceData.email}`;
             </button>
           )}
           {reservation.status === "Terminée" && (
-            <button
-              onClick={() => setShowInvoiceModal(true)}
-              className="px-4 py-2 rounded bg-green-600 hover:bg-green-500 transition"
-            >
-              Créer une facture
-            </button>
+            <>
+              <button
+                onClick={() => setShowInvoiceModal(true)}
+                className="px-4 py-2 rounded bg-green-600 hover:bg-green-500 transition"
+              >
+                Créer une facture
+              </button>
+              {onDelete && (
+                <button
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        "Supprimer définitivement cette course terminée ? Cette action est irréversible."
+                      )
+                    ) {
+                      onDelete(reservation.id, reservation.type);
+                      onClose();
+                    }
+                  }}
+                  className="px-4 py-2 rounded bg-red-700 hover:bg-red-600 transition"
+                >
+                  Supprimer
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>

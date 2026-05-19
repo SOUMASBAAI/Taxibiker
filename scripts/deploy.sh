@@ -8,7 +8,7 @@ set -e
 ENVIRONMENT=${1:-staging}
 PROJECT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
-echo "🚀 Déploiement de TaxiBiker vers l'environnement: $ENVIRONMENT"
+echo "🚀 Déploiement de Taxi Biker Paris vers l'environnement: $ENVIRONMENT"
 
 # Couleurs pour les messages
 RED='\033[0;31m'

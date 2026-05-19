@@ -427,7 +427,7 @@ class WhatsAppService
         $price = $data['price'] ?? '';
         $type = $data['type'] ?? 'classic';
 
-        $message = "🚕 *TAXIBIKER - Confirmation de réservation*\n\n";
+        $message = "🚕 *TAXI BIKER PARIS - Confirmation de réservation*\n\n";
         $message .= "Bonjour {$data['firstname']},\n\n";
         $message .= "Votre demande de course a été reçue :\n\n";
         $message .= "📅 *Date :* $date\n";
@@ -462,7 +462,7 @@ class WhatsAppService
      */
     private function buildStatusUpdateMessage(array $data, string $status): string
     {
-        $message = "🚕 *TAXIBIKER - Mise à jour*\n\n";
+        $message = "🚕 *TAXI BIKER PARIS - Mise à jour*\n\n";
         $message .= "Bonjour {$data['firstname']},\n\n";
         
         switch ($status) {
@@ -488,7 +488,7 @@ class WhatsAppService
                 
             case 'Terminée':
                 $message .= "🏁 *Course terminée*\n";
-                $message .= "Merci d'avoir choisi TAXIBIKER !\n";
+                $message .= "Merci d'avoir choisi TAXI BIKER PARIS !\n";
                 $message .= "N'hésitez pas à nous faire part de vos commentaires. ⭐";
                 break;
         }

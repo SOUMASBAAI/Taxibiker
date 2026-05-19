@@ -12,6 +12,8 @@ use App\Entity\Zone;
 
 class ZonePricingService
 {
+    private const URGENT_BOOKING_FEE = 15.00;
+
     private RateRepository $rateRepository;
     private ZoneRepository $zoneRepository;
     private ZoneLocationRepository $zoneLocationRepository;
@@ -133,7 +135,7 @@ class ZonePricingService
         // Calculate urgent booking fee (booking within 1 hour)
         $urgentBookingFee = 0.0;
         if ($isUrgent) {
-            $urgentBookingFee = 15.00; // 15€ for bookings within 1 hour
+            $urgentBookingFee = self::URGENT_BOOKING_FEE;
         }
         
         $totalPrice = $basePrice + $timeBasedFee + $stopFee + $weekendHolidayFee + $excessBaggageFee + $urgentBookingFee;

@@ -53,7 +53,7 @@ Name: taxibiker_reservation_confirmation
 Category: TRANSACTIONAL
 Language: French (fr)
 
-🚕 *TAXIBIKER - Confirmation*
+🚕 *TAXI BIKER PARIS - Confirmation*
 
 Bonjour {{1}},
 Réservation reçue pour le {{2}} à {{3}}
@@ -71,7 +71,7 @@ Name: taxibiker_status_update
 Category: TRANSACTIONAL
 Language: French (fr)
 
-🚕 *TAXIBIKER - Mise à jour*
+🚕 *TAXI BIKER PARIS - Mise à jour*
 
 Bonjour {{1}},
 Votre réservation du {{2}} : {{3}}
@@ -119,7 +119,7 @@ private const TEMPLATE_NAMES = [
 | **Cost**                  | Same          | Same              |
 | **Features**              | Full features | Full features     |
 
-## Recommended Approach for TaxiBiker
+## Recommended Approach for Taxi Biker Paris
 
 **I recommend the Self-Signup approach because:**
 

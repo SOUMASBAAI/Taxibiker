@@ -27,7 +27,7 @@ class DebugEmailCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $io->title('Debug Configuration Email TaxiBiker');
+        $io->title('Debug Configuration Email Taxi Biker Paris');
 
         // Vérifier si le mailer est disponible
         $io->section('Service Mailer');
@@ -74,7 +74,7 @@ class DebugEmailCommand extends Command
             $email = (new \Symfony\Component\Mime\Email())
                 ->from('contact@taxibikerparis.com')
                 ->to('test@example.com')
-                ->subject('Test TaxiBiker')
+                ->subject('Test Taxi Biker Paris')
                 ->text('Ceci est un test');
                 
             $io->success('✅ Création d\'email réussie');

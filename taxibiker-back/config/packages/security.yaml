@@ -17,6 +17,12 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
+        # Routes publiques (login, register, etc.) — évite le blocage JWT sur OPTIONS (preflight CORS)
+        api_public:
+            pattern: ^/api/(login|register|contact|forgot-password|reset-password.*|pricing.*|admin/register)
+            stateless: true
+            security: false
+
         api:
             pattern: ^/api
             stateless: true

@@ -39,7 +39,7 @@ A **Regulatory Bundle** is a collection of documents and information that proves
    - Lease agreement
    - Property tax statement
 
-3. Business Documentation (for TaxiBiker)
+3. Business Documentation (for Taxi Biker Paris)
    - Business registration certificate
    - SIRET number documentation
    - Proof of business address
@@ -61,7 +61,7 @@ A **Regulatory Bundle** is a collection of documents and information that proves
 
 3. **Fill Required Information**
    ```
-   Bundle Name: TaxiBiker France Compliance
+   Bundle Name: Taxi Biker Paris France Compliance
    End User Type: Individual
    Country: France
    Regulation: France Local Individual
@@ -156,7 +156,7 @@ A **Regulatory Bundle** is a collection of documents and information that proves
 - No regulatory requirements
 - Switch to purchased number later
 
-## 💡 Recommendations for TaxiBiker
+## 💡 Recommendations for Taxi Biker Paris
 
 ### Immediate Action:
 

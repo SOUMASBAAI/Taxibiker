@@ -41,25 +41,25 @@ class SendTestEmailCommand extends Command
             $email = (new Email())
                 ->from('contact@taxibikerparis.com')
                 ->to($toEmail)
-                ->subject('🚕 Test TaxiBiker - Configuration Email')
+                ->subject('🚕 Test Taxi Biker Paris - Configuration Email')
                 ->html('
                     <h1>Test de configuration email</h1>
                     <p>Bonjour,</p>
-                    <p>Ceci est un email de test pour vérifier la configuration Hostinger de TaxiBiker.</p>
+                    <p>Ceci est un email de test pour vérifier la configuration Hostinger de Taxi Biker Paris.</p>
                     <p>Si vous recevez cet email, la configuration fonctionne parfaitement !</p>
                     <hr>
-                    <p><strong>TaxiBiker Paris</strong><br>
+                    <p><strong>Taxi Biker Paris</strong><br>
                     Service de transport professionnel</p>
                 ')
                 ->text('
-Test de configuration email TaxiBiker
+Test de configuration email Taxi Biker Paris
 
 Bonjour,
 
-Ceci est un email de test pour vérifier la configuration Hostinger de TaxiBiker.
+Ceci est un email de test pour vérifier la configuration Hostinger de Taxi Biker Paris.
 Si vous recevez cet email, la configuration fonctionne parfaitement !
 
-TaxiBiker Paris
+Taxi Biker Paris
 Service de transport professionnel
                 ');
 

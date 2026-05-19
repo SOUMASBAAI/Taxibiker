@@ -1,6 +1,6 @@
 # WhatsApp Business API Production Setup Guide
 
-## 🚀 Complete Setup Process for TaxiBiker
+## 🚀 Complete Setup Process for Taxi Biker Paris
 
 ### Step 1: Business Prerequisites
 
@@ -39,7 +39,7 @@ Before starting, ensure you have:
 3. **Required Information**:
 
    ```
-   Business Name: TaxiBiker
+   Business Name: Taxi Biker Paris
    Business Type: Transportation/Taxi Service
    Business Website: https://taxibikerparis.com
    Business Phone: +33 X XX XX XX XX (your business number)
@@ -64,7 +64,7 @@ Category: TRANSACTIONAL
 Language: French (fr)
 
 Content:
-🚕 *TAXIBIKER - Confirmation de réservation*
+🚕 *TAXI BIKER PARIS - Confirmation de réservation*
 
 Bonjour {{1}},
 
@@ -90,7 +90,7 @@ Category: TRANSACTIONAL
 Language: French (fr)
 
 Content:
-🚕 *TAXIBIKER - Mise à jour*
+🚕 *TAXI BIKER PARIS - Mise à jour*
 
 Bonjour {{1}},
 
@@ -111,7 +111,7 @@ Category: TRANSACTIONAL
 Language: French (fr)
 
 Content:
-🚕 *TAXIBIKER - Mise à jour*
+🚕 *TAXI BIKER PARIS - Mise à jour*
 
 Bonjour {{1}},
 

@@ -55,7 +55,7 @@ class HealthController extends AbstractController
     {
         return new JsonResponse([
             'status' => 'ok',
-            'message' => 'TaxiBiker API is running',
+            'message' => 'Taxi Biker Paris API is running',
             'timestamp' => date('c')
         ]);
     }

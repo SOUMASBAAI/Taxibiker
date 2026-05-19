@@ -78,7 +78,7 @@ export default function ContactForm() {
               id="contact-title"
               className="text-white text-2xl font-bold mb-2"
             >
-              Contactez TaxiBiker
+              Contactez Taxi Biker Paris
             </h1>
             <p className="text-gray-400 text-sm">
               Remplissez le formulaire et nous vous répondrons rapidement.

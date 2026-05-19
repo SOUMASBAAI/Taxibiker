@@ -9,6 +9,7 @@ use App\Entity\PasswordResetToken;
 use App\Entity\PredefinedReservation;
 use App\Entity\User;
 use App\Repository\UserRepository;
+use App\Service\EmailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -25,7 +26,8 @@ class ClientController extends AbstractController
         private EntityManagerInterface $entityManager,
         private UserRepository $userRepository,
         private UserPasswordHasherInterface $passwordHasher,
-        private ValidatorInterface $validator
+        private ValidatorInterface $validator,
+        private EmailService $emailService,
     ) {
     }
 
@@ -109,8 +111,10 @@ class ClientController extends AbstractController
                 $client->setMonthlyCreditEnabled((bool) $data['monthly_credit_enabled']);
             }
 
+            $plainPassword = $data['password'];
+
             // Hasher le mot de passe
-            $hashedPassword = $this->passwordHasher->hashPassword($client, $data['password']);
+            $hashedPassword = $this->passwordHasher->hashPassword($client, $plainPassword);
             $client->setPassword($hashedPassword);
 
             // Valider l'entité
@@ -130,9 +134,19 @@ class ClientController extends AbstractController
             $this->entityManager->persist($client);
             $this->entityManager->flush();
 
+            $emailSent = $this->emailService->sendClientAccountCredentials(
+                $client->getEmail(),
+                $client->getFirstName(),
+                $client->getEmail(),
+                $plainPassword
+            );
+
             return $this->json([
                 'success' => true,
-                'message' => 'Client créé avec succès',
+                'message' => $emailSent
+                    ? 'Client créé avec succès. Un email avec les identifiants a été envoyé.'
+                    : 'Client créé avec succès, mais l\'email des identifiants n\'a pas pu être envoyé.',
+                'email_sent' => $emailSent,
                 'client' => [
                     'id' => $client->getId(),
                     'firstname' => $client->getFirstName(),

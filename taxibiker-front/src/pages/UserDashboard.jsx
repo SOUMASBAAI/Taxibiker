@@ -333,7 +333,7 @@ export default function UserDashboard() {
                   Bonjour, {authService.getUser()?.firstname || "Voyageur"}
                 </h1>
                 <p className="text-gray-300 text-sm sm:text-base">
-                  Bienvenue sur votre espace personnel TaxiBiker
+                  Bienvenue sur votre espace personnel Taxi Biker Paris
                 </p>
               </div>
             </div>

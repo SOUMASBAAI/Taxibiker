@@ -5,11 +5,13 @@ export default function EditReservationModal({
   onClose,
   onUpdate,
   onCancel,
+  isAdmin = false,
 }) {
   const [editTime, setEditTime] = useState(reservation?.time || "");
   const [editDate, setEditDate] = useState(reservation?.date || "");
   const [editLuggage, setEditLuggage] = useState(reservation?.luggage || false);
   const [editStop, setEditStop] = useState(reservation?.stop || "");
+  const [editHours, setEditHours] = useState(reservation?.hours || 2);
   const [price, setPrice] = useState(reservation?.price || 0);
 
   // États pour les suggestions d'adresse
@@ -24,17 +26,21 @@ export default function EditReservationModal({
       setEditDate(reservation.date || "");
       setEditLuggage(reservation.luggage || false);
       setEditStop(reservation.stop || "");
+      setEditHours(reservation.hours || 2);
       setPrice(reservation.price || 0);
     }
   }, [reservation]);
 
-  // Calcul du prix total incluant le bagage et le stop
+  // Calcul du prix (client uniquement — l'admin saisit le prix manuellement)
   useEffect(() => {
-    const basePrice = reservation?.price || 0;
+    if (isAdmin) {
+      return;
+    }
     const baggageFee = editLuggage ? 15 : 0;
     const stopFee = editStop && editStop.trim() ? 20 : 0;
+    const basePrice = Math.max(0, (reservation?.price || 0) - (reservation?.luggage ? 15 : 0));
     setPrice(basePrice + baggageFee + stopFee);
-  }, [editLuggage, editStop, reservation]);
+  }, [editLuggage, editStop, reservation, isAdmin]);
 
   // Fonction pour récupérer les suggestions d'adresse
   const getSuggestions = async (query) => {
@@ -134,11 +140,14 @@ export default function EditReservationModal({
       time: editTime,
       luggage: editLuggage,
       stop: editStop,
+      hours: editHours,
       price: price,
       status:
-        editDate !== reservation.date || editTime !== reservation.time
-          ? "En attente de confirmation"
-          : reservation.status,
+        isAdmin
+          ? reservation.status
+          : editDate !== reservation.date || editTime !== reservation.time
+            ? "En attente de confirmation"
+            : reservation.status,
     };
 
     onUpdate(updatedReservation);
@@ -161,7 +170,14 @@ export default function EditReservationModal({
         </button>
 
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold mb-2">Modifier la réservation</h2>
+          <h2 className="text-2xl font-bold mb-2">
+            {isAdmin ? "Modifier la course (admin)" : "Modifier la réservation"}
+          </h2>
+          {isAdmin && (
+            <p className="text-sm text-gray-400">
+              Statut actuel : <span className="text-orange-400">{reservation.status}</span>
+            </p>
+          )}
         </div>
 
         <form onSubmit={handleSubmitModification} className="space-y-4">
@@ -188,6 +204,27 @@ export default function EditReservationModal({
               required
             />
           </div>
+
+          {reservation.type === "hourly" && (
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Durée (heures)
+              </label>
+              <input
+                type="number"
+                min="2"
+                max="5"
+                value={editHours}
+                onChange={(e) =>
+                  setEditHours(
+                    Math.max(2, Math.min(5, parseInt(e.target.value, 10) || 2))
+                  )
+                }
+                className="w-full p-3 rounded-lg bg-white/10 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                required
+              />
+            </div>
+          )}
 
           {/* Trajet (non modifiable) */}
           <div className="bg-white/5 rounded-xl p-4">
@@ -229,7 +266,8 @@ export default function EditReservationModal({
             </label>
           </div>
 
-          {/* Stop */}
+          {/* Stop (courses classiques uniquement) */}
+          {reservation.type !== "hourly" && (
           <div className="stop-input-container">
             <label className="block text-sm font-medium mb-2">
               Stop supplémentaire (optionnel)
@@ -272,24 +310,41 @@ export default function EditReservationModal({
               )}
             </div>
           </div>
+          )}
 
           {/* Prix */}
           <div className="bg-gradient-to-r from-orange-600/20 to-orange-800/20 rounded-xl p-4 border border-orange-500/30">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <span className="text-lg font-semibold">Prix total</span>
-              <span className="text-2xl font-bold text-orange-400">
-                {price}€
-              </span>
+              {isAdmin ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={price}
+                    onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
+                    className="w-28 text-right text-2xl font-bold text-orange-400 bg-white/10 border border-orange-500/50 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                  <span className="text-2xl font-bold text-orange-400">€</span>
+                </div>
+              ) : (
+                <span className="text-2xl font-bold text-orange-400">
+                  {price}€
+                </span>
+              )}
             </div>
           </div>
 
           {/* Avertissement */}
+          {!isAdmin && (
           <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
             <p className="text-yellow-400 text-sm">
               ⚠️ Les modifications de date/heure remettront votre réservation en
               attente de confirmation.
             </p>
           </div>
+          )}
 
           {/* Boutons */}
           <div className="flex gap-3 pt-4">

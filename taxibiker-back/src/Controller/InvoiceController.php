@@ -75,7 +75,7 @@ class InvoiceController extends AbstractController
 
             // Préparer les données de la facture
             $invoiceData = [
-                'companyName' => 'TAXIBIKERPARIS',
+                'companyName' => 'TAXI BIKER PARIS',
                 'address' => '123 Rue de la Taxi, Paris 75001',
                 'phone' => '07 88 26 83 54',
                 'email' => 'contact@taxibiker.fr',
