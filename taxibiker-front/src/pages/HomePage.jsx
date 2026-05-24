@@ -128,8 +128,8 @@ export default function HomePage() {
        
     },
     {
-      title: "Gel hydroalcoolique",
-      description: "Gel désinfectant pour les mains, disponible à bord.",
+      title: "Gilet airbag",
+      description: "Protection renforcée du buste en cas de chute ou choc.",
       imageUrl: giletImg,
     },
     {
@@ -144,9 +144,9 @@ export default function HomePage() {
       imageUrl: gantsImg,
     },
     {
-      title: "Porte-bagages",
+      title: "Equipement",
       description:
-        "Espace sécurisé pour transporter vos bagages en toute sécurité.",
+        "Veste technique assurant confort et protection pendant le trajet.",
       imageUrl: vesteImg,
     },
   ];
