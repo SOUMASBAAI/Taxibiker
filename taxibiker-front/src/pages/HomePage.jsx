@@ -6,14 +6,14 @@ import WhatsappButton from "../components/WhatsappButton";
 import authService from "../services/authService";
 import { buildApiUrl } from "../config/api.js";
 import { pricingInfoCards } from "../config/pricingInfo.js";
-import taxiImage from "../assets/taxi.jpg";
+import taxiVideo from "../assets/taxi.mp4";
 import casqueImg from "../assets/equipements/casque.png";
 import gantsImg from "../assets/equipements/gants.png";
 import giletImg from "../assets/equipements/gilet.png";
 import vesteImg from "../assets/equipements/veste.png";
 import jupeImg from "../assets/equipements/tabki.png";
 import charlotteImg from "../assets/equipements/charlotte.png";
-import taxiImage2 from "../assets/taxi_team.jpg";
+import taxiImage2 from "../assets/moto.jpeg";
 import {
   FaShieldAlt,
   FaMotorcycle,
@@ -161,20 +161,27 @@ export default function HomePage() {
       )}
 
       <main className="bg-black text-white">
-        {/* Hero Section */}
-        <section
-          className="relative w-full min-h-screen flex flex-col justify-end"
-          style={{
-            backgroundImage: `url(${taxiImage})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center 20%",
-            backgroundRepeat: "no-repeat",
-          }}
-        >
+         {/* HERO VIDEO */}
+        <section className="relative w-full min-h-screen flex flex-col justify-end overflow-hidden">
+
+          <video
+            className="absolute top-0 left-0 w-full h-full object-cover"
+            autoPlay
+            loop
+            muted
+            playsInline
+          >
+            <source src={taxiVideo} type="video/mp4" />
+          </video>
+
+          {/* overlay */}
+          <div className="absolute inset-0 bg-black/40" />
+
           <div className="relative z-10 text-center px-4 pb-32 md:pb-48">
             <h1 className="text-3xl md:text-5xl font-bold mb-6">
               Service haut de gamme pour vos déplacements
             </h1>
+
             <button
               onClick={() => (window.location.href = "/reservation")}
               className="bg-[#DD5212] hover:bg-orange-600 transition py-3 px-6 rounded-lg font-semibold text-white text-lg"
