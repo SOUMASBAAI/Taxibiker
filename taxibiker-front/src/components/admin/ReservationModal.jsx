@@ -370,13 +370,26 @@ ${invoiceData.email}`;
 
         <div className="mb-4">
           <span className="font-semibold">Prix :</span>
-          <p className="text-gray-300">{reservation.price}€</p>
+          <p className="text-gray-300">{reservation.price}€ ttc</p>
+          <span className="font-semibold"> 10 % de tva incluse:</span>
         </div>
 
         <div className="mb-4">
           <span className="font-semibold">Statut :</span>
           <p className="text-gray-300">{reservation.status}</p>
         </div>
+
+         <div className="mb-4">
+           <span className="font-semibold">Taxi Biker Paris :</span>
+            <span className="font-semibold">RCS 917 876 773 :</span>
+             <span className="font-semibold">+(33)7 88 26 83 54 :</span>
+              <span className="font-semibold">Contact@taxibikerparis.com  :</span>
+         </div>
+
+          <div className="mb-4">
+            <span className="font-semibold">Ordre de mission (arrêté du 06-01-1993 art3) :</span>
+            <span className="font-semibold">Transport réservé par l'entreprise :</span>
+          </div>
 
         <div className="flex justify-end gap-3 flex-wrap">
           {onEdit && EDITABLE_STATUSES.includes(reservation.status) && (
