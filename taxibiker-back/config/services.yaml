@@ -14,6 +14,7 @@ parameters:
     company.phone: "+(33)7 88 26 83 54"
     company.email: "Contact@taxibikerparis.com"
     company.driver_name: "Cédric"
+    company.address: "6 rue d'Armaillé, 75017 Paris"
     company.tripadvisor_review_url: "https://www.tripadvisor.fr/Attraction_Review-g187147-d28863317-Reviews-Taxi_Biker_Paris-Paris_Ile_de_France.html"
     company.google_review_url: "https://www.google.com/search?q=Taxi+Biker+Paris+Avis"
 

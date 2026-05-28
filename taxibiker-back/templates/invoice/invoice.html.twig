@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Facture - {{ clientName }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; color: #111; }
+        .header { text-align: center; margin-bottom: 24px; border-bottom: 2px solid #f97316; padding-bottom: 16px; }
+        .company { font-weight: bold; font-size: 18px; color: #f97316; }
+        .meta { display: flex; justify-content: space-between; margin-bottom: 20px; gap: 16px; flex-wrap: wrap; }
+        .meta-block { flex: 1; min-width: 200px; }
+        .client-info, .invoice-info { margin-bottom: 12px; }
+        .items { margin: 20px 0; }
+        .item { display: flex; justify-content: space-between; margin: 10px 0; padding: 4px 0; border-bottom: 1px solid #eee; }
+        .total { font-weight: bold; font-size: 16px; border-top: 2px solid #000; padding-top: 10px; margin-top: 8px; }
+        .legal { margin-top: 28px; font-size: 12px; color: #444; border-top: 1px solid #ddd; padding-top: 16px; text-align: center; }
+        .legal p { margin: 4px 0; }
+        @media print { body { margin: 0; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company">{{ companyName }}</div>
+        <div>{{ address }}</div>
+        <div>Tél: {{ phone }} | Email: {{ email }}</div>
+    </div>
+
+    <div class="meta">
+        <div class="meta-block client-info">
+            <strong>Client:</strong> {{ clientName }}
+        </div>
+        <div class="meta-block invoice-info" style="text-align: right;">
+            <div><strong>N° de série:</strong> {{ invoiceNumber }}</div>
+            <div><strong>Date facture:</strong> {{ invoiceDate }}</div>
+        </div>
+    </div>
+
+    <div class="invoice-info">
+        <strong>Date du service:</strong> {{ serviceDate }} à {{ serviceTime }}
+    </div>
+    <div class="invoice-info">
+        <strong>Paiement:</strong> {{ paymentLabel }}
+    </div>
+
+    <div class="items">
+        <div class="item">
+            <span>{{ service }}</span>
+            <span>{{ price|number_format(0, ',', ' ') }}€</span>
+        </div>
+        {% if luggageFee > 0 %}
+        <div class="item">
+            <span>Supplément bagage</span>
+            <span>{{ luggageFee|number_format(0, ',', ' ') }}€</span>
+        </div>
+        {% endif %}
+        {% if stopFee > 0 %}
+        <div class="item">
+            <span>Supplément arrêt</span>
+            <span>{{ stopFee|number_format(0, ',', ' ') }}€</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="item total">
+        <span>TOTAL TTC</span>
+        <span>{{ total|number_format(0, ',', ' ') }}€</span>
+    </div>
+    <p style="font-size: 13px; color: #555; margin-top: 8px;"><em>Dont 10 % de TVA incluse</em></p>
+
+    <div class="legal">
+        <p>Ordre de mission (arrêté du 06-01-1993 art3)</p>
+        <p>Transport réservé par l'entreprise</p>
+        <p><strong>{{ companyName }}</strong></p>
+        <p>RCS {{ companyRcs }}</p>
+        <p>{{ phone }} — {{ email }}</p>
+    </div>
+</body>
+</html>

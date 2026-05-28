@@ -6,6 +6,10 @@ import {
   mapPaymentLabel,
   buildTransportInfos,
 } from "../../utils/transportConfirmation";
+import {
+  buildInvoiceDataFromReservation,
+  buildInvoiceHTML,
+} from "../../utils/invoice";
 
 const EDITABLE_STATUSES = ["Acceptée", "À confirmer", "En cours"];
 const DELETABLE_STATUSES = ["Terminée", "Annulée", "Refusée"];
@@ -20,91 +24,32 @@ export default function ReservationModal({
   onDelete,
 }) {
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
-  const [invoiceData, setInvoiceData] = useState({
-    companyName: "TAXI BIKER PARIS Cédric",
-    address: "123 Rue de la Taxi, Paris 75001",
-    phone: "01 23 45 67 89",
-    email: "contact@taxibiker.fr",
-    clientName: `${reservation.firstname} ${reservation.lastname}`,
-    service: `Transport ${reservation.from} → ${reservation.to}`,
-    date: reservation.date,
-    time: reservation.time,
-    price: reservation.price,
-    luggageFee: reservation.luggage ? 15 : 0,
-    total: reservation.price + (reservation.luggage ? 15 : 0),
-  });
+  const [invoiceData, setInvoiceData] = useState(() =>
+    buildInvoiceDataFromReservation(reservation)
+  );
 
   const handleInvoiceChange = (field, value) => {
-    setInvoiceData((prev) => ({ ...prev, [field]: value }));
+    setInvoiceData((prev) => {
+      const next = { ...prev, [field]: value };
+      next.total =
+        (Number(next.price) || 0) +
+        (Number(next.luggageFee) || 0) +
+        (Number(next.stopFee) || 0);
+      return next;
+    });
   };
 
   const transportInfos = buildTransportInfos(reservation.from, reservation.to);
   const paymentLabel = mapPaymentLabel(reservation.paymentMethod || "immediate");
 
   const downloadInvoice = () => {
-    // Create a simple HTML invoice that can be printed
-    const invoiceHTML = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Facture - ${invoiceData.clientName}</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
-          .header { text-align: center; margin-bottom: 30px; }
-          .company { font-weight: bold; font-size: 18px; }
-          .client-info, .invoice-info { margin-bottom: 20px; }
-          .items { margin: 20px 0; }
-          .item { display: flex; justify-content: space-between; margin: 10px 0; }
-          .total { font-weight: bold; font-size: 16px; border-top: 2px solid #000; padding-top: 10px; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div class="company">${invoiceData.companyName}</div>
-          <div>${invoiceData.address}</div>
-          <div>Tél: ${invoiceData.phone} | Email: ${invoiceData.email}</div>
-        </div>
-        
-        <div class="client-info">
-          <strong>Client:</strong> ${invoiceData.clientName}
-        </div>
-        
-        <div class="invoice-info">
-          <strong>Date du service:</strong> ${invoiceData.date} à ${
-      invoiceData.time
-    }
-        </div>
-        
-        <div class="items">
-          <div class="item">
-            <span>${invoiceData.service}</span>
-            <span>${invoiceData.price}€</span>
-          </div>
-          ${
-            invoiceData.luggageFee > 0
-              ? `
-          <div class="item">
-            <span>Supplément bagage</span>
-            <span>${invoiceData.luggageFee}€</span>
-          </div>
-          `
-              : ""
-          }
-        </div>
-        
-        <div class="item total">
-          <span>TOTAL</span>
-          <span>${invoiceData.total}€</span>
-        </div>
-      </body>
-      </html>
-    `;
+    const invoiceHTML = buildInvoiceHTML(invoiceData);
 
     const blob = new Blob([invoiceHTML], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `facture_${reservation.firstname}_${reservation.lastname}_${reservation.date}.html`;
+    a.download = `facture_${invoiceData.invoiceNumber}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -112,85 +57,17 @@ export default function ReservationModal({
   };
 
   const sendInvoiceToClient = () => {
-    // Create a simple HTML invoice that can be sent to client
-    const invoiceHTML = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Facture - ${invoiceData.clientName}</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
-          .header { text-align: center; margin-bottom: 30px; }
-          .company { font-weight: bold; font-size: 18px; }
-          .client-info, .invoice-info { margin-bottom: 20px; }
-          .items { margin: 20px 0; }
-          .item { display: flex; justify-content: space-between; margin: 10px 0; }
-          .total { font-weight: bold; font-size: 16px; border-top: 2px solid #000; padding-top: 10px; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div class="company">${invoiceData.companyName}</div>
-          <div>${invoiceData.address}</div>
-          <div>Tél: ${invoiceData.phone} | Email: ${invoiceData.email}</div>
-        </div>
-        
-        <div class="client-info">
-          <strong>Client:</strong> ${invoiceData.clientName}
-        </div>
-        
-        <div class="invoice-info">
-          <strong>Date du service:</strong> ${invoiceData.date} à ${
-      invoiceData.time
-    }
-        </div>
-        
-        <div class="items">
-          <div class="item">
-            <span>${invoiceData.service}</span>
-            <span>${invoiceData.price}€</span>
-          </div>
-          ${
-            invoiceData.luggageFee > 0
-              ? `
-          <div class="item">
-            <span>Supplément bagage</span>
-            <span>${invoiceData.luggageFee}€</span>
-          </div>
-          `
-              : ""
-          }
-        </div>
-        
-        <div class="item total">
-          <span>TOTAL</span>
-          <span>${invoiceData.total}€</span>
-        </div>
-      </body>
-      </html>
-    `;
+    const subject = `Facture ${COMPANY_INFO.name} - ${invoiceData.invoiceNumber}`;
+    const body = `Bonjour ${reservation.firstname},
 
-    // Create mailto link with the invoice as attachment
-    const subject = `Facture TAXI BIKER PARIS - Service du ${invoiceData.date}`;
-    const body = `Bonjour ${reservation.firstname},\n\nVeuillez trouver ci-joint votre facture pour le service de transport du ${invoiceData.date}.\n\nTotal: ${invoiceData.total}€\n\nCordialement,\nTAXI BIKER PARIS Cédric`;
+Veuillez trouver ci-joint votre facture pour le service du ${invoiceData.date}.
 
-    // Create a temporary text file with invoice content for email attachment
-    const _invoiceText = `FACTURE TAXI BIKER PARIS Cédric
-    
-Client: ${invoiceData.clientName}
-Date du service: ${invoiceData.date} à ${invoiceData.time}
+N° de série : ${invoiceData.invoiceNumber}
+Total TTC : ${invoiceData.total}€
+Paiement : ${invoiceData.paymentLabel}
 
-Détails:
-- ${invoiceData.service}: ${invoiceData.price}€
-${
-  invoiceData.luggageFee > 0
-    ? `- Supplément bagage: ${invoiceData.luggageFee}€`
-    : ""
-}
-
-TOTAL: ${invoiceData.total}€
-
-Contact:
+Cordialement,
+${invoiceData.companyName}
 ${invoiceData.phone}
 ${invoiceData.email}`;
 
@@ -198,6 +75,7 @@ ${invoiceData.email}`;
       subject
     )}&body=${encodeURIComponent(body)}`;
     window.open(mailtoLink);
+    downloadInvoice();
   };
 
   return (
@@ -566,6 +444,20 @@ ${invoiceData.email}`;
 
               <div>
                 <label className="block text-sm font-medium mb-1">
+                  N° de série
+                </label>
+                <input
+                  type="text"
+                  value={invoiceData.invoiceNumber}
+                  onChange={(e) =>
+                    handleInvoiceChange("invoiceNumber", e.target.value)
+                  }
+                  className="w-full p-2 rounded bg-white text-black"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
                   Service
                 </label>
                 <input
@@ -586,14 +478,12 @@ ${invoiceData.email}`;
                   <input
                     type="number"
                     value={invoiceData.price}
-                    onChange={(e) => {
-                      const price = parseFloat(e.target.value) || 0;
-                      handleInvoiceChange("price", price);
+                    onChange={(e) =>
                       handleInvoiceChange(
-                        "total",
-                        price + invoiceData.luggageFee
-                      );
-                    }}
+                        "price",
+                        parseFloat(e.target.value) || 0
+                      )
+                    }
                     className="w-full p-2 rounded bg-white text-black"
                   />
                 </div>
@@ -604,18 +494,37 @@ ${invoiceData.email}`;
                   <input
                     type="number"
                     value={invoiceData.luggageFee}
-                    onChange={(e) => {
-                      const luggageFee = parseFloat(e.target.value) || 0;
-                      handleInvoiceChange("luggageFee", luggageFee);
+                    onChange={(e) =>
                       handleInvoiceChange(
-                        "total",
-                        invoiceData.price + luggageFee
-                      );
-                    }}
+                        "luggageFee",
+                        parseFloat(e.target.value) || 0
+                      )
+                    }
                     className="w-full p-2 rounded bg-white text-black"
                   />
                 </div>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Supplément arrêt
+                </label>
+                <input
+                  type="number"
+                  value={invoiceData.stopFee}
+                  onChange={(e) =>
+                    handleInvoiceChange(
+                      "stopFee",
+                      parseFloat(e.target.value) || 0
+                    )
+                  }
+                  className="w-full p-2 rounded bg-white text-black"
+                />
+              </div>
+
+              <p className="text-sm text-gray-300">
+                Paiement : {invoiceData.paymentLabel}
+              </p>
 
               <div className="bg-gray-800 p-3 rounded">
                 <div className="flex justify-between items-center">
