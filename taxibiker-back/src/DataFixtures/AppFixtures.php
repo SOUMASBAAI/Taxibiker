@@ -410,7 +410,7 @@ class AppFixtures extends Fixture
             [
                 'departure' => 'Paris',
                 'arrival' => 'Aéroport d\'Orly, 94390 Orly',
-                'price' => '80.00'
+                'price' => '75.00'
             ],
             [
                 'departure' => 'Paris',
@@ -420,7 +420,7 @@ class AppFixtures extends Fixture
             [
                 'departure' => 'Paris',
                 'arrival' => 'Aéroport Charles de Gaulle, 95700 Roissy-en-France',
-                'price' => '100.00'
+                'price' => '95.00'
             ],
             
             // Reverse routes (same price)
@@ -432,7 +432,7 @@ class AppFixtures extends Fixture
             [
                 'departure' => 'Aéroport d\'Orly, 94390 Orly',
                 'arrival' => 'Paris',
-                'price' => '80.00'
+                'price' => '75.00'
             ],
             [
                 'departure' => 'Aéroport du Bourget, 93350 Le Bourget',
@@ -442,7 +442,7 @@ class AppFixtures extends Fixture
             [
                 'departure' => 'Aéroport Charles de Gaulle, 95700 Roissy-en-France',
                 'arrival' => 'Paris',
-                'price' => '100.00'
+                'price' => '95.00'
             ],
             
             // Inter-airport and major hub routes
