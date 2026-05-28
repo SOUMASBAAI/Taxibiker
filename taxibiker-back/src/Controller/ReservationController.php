@@ -645,6 +645,53 @@ class ReservationController extends AbstractController
     }
 
     /**
+     * Supprimer une réservation terminée (Utilisateur — masquer de l'historique)
+     */
+    #[Route('/reservations/{id}', name: 'user_delete_reservation', methods: ['DELETE'])]
+    public function deleteMyReservation(Request $request, int $id): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = $this->getUser();
+
+        if (!$user instanceof User) {
+            return $this->json(['error' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $data = json_decode($request->getContent(), true) ?? [];
+        $type = $data['type'] ?? $request->query->get('type');
+
+        $reservation = $this->findReservationByIdAndType($id, $type);
+
+        if (!$reservation) {
+            return $this->json(['error' => 'Réservation non trouvée'], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($reservation->getClient()->getId() !== $user->getId()) {
+            return $this->json(['error' => 'Cette réservation ne vous appartient pas'], Response::HTTP_FORBIDDEN);
+        }
+
+        if ($reservation->getStatut() !== 'completed') {
+            return $this->json([
+                'error' => 'Seules les courses terminées peuvent être supprimées',
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        try {
+            $this->entityManager->remove($reservation);
+            $this->entityManager->flush();
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Course supprimée de votre historique',
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'error' => 'Erreur lors de la suppression: ' . $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
      * Annuler une réservation (Utilisateur)
      * Uniquement pour les réservations en attente
      */

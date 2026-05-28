@@ -176,6 +176,51 @@ export default function UserDashboard() {
     }
   };
 
+  const handleDeleteReservation = async (reservation, e) => {
+    if (e) e.stopPropagation();
+
+    if (
+      !confirm(
+        "Supprimer cette course de votre historique ? Cette action est définitive."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const response = await authService.authenticatedRequest(
+        buildApiUrl(`reservations/${reservation.id}`),
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: reservation.type }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.success) {
+        setReservations((prev) =>
+          prev.filter(
+            (r) => !(r.id === reservation.id && r.type === reservation.type)
+          )
+        );
+        setNotification({
+          type: "success",
+          message: "Course supprimée de votre historique",
+        });
+        setShowViewModal(false);
+        setSelectedReservation(null);
+        setTimeout(() => setNotification(null), 5000);
+      } else {
+        alert(result.error || "Erreur lors de la suppression");
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      alert("Erreur lors de la suppression");
+    }
+  };
+
   const handleCancelReservation = async (id, e) => {
     if (e) e.stopPropagation();
 
@@ -771,11 +816,23 @@ Les modifications s'appliquent uniquement à l'heure, la date et le
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {pastReservations.map((res) => (
                   <article
-                    key={res.id}
-                    className="group bg-black border border-gray-700/50 rounded-2xl p-5 hover:border-orange-500/50 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300"
+                    key={`${res.type}-${res.id}`}
+                    className="group relative bg-black border border-gray-700/50 rounded-2xl p-5 hover:border-orange-500/50 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300"
                   >
+                    {res.status === "Terminée" && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteReservation(res, e)}
+                        className="absolute top-3 right-3 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-gray-600 bg-gray-900/90 text-gray-400 transition-all hover:border-red-500 hover:bg-red-500/20 hover:text-red-400"
+                        title="Supprimer de l'historique"
+                        aria-label="Supprimer cette course"
+                      >
+                        <FaTimes className="text-xs" />
+                      </button>
+                    )}
+
                     {/* Header avec badge statut */}
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-4 pr-8">
                       <div className="flex items-center gap-2">
                         <div
                           className={`p-2 rounded-lg ${
