@@ -609,7 +609,7 @@ class ReservationController extends AbstractController
     }
 
     /**
-     * Supprimer une réservation terminée (Admin)
+     * Supprimer une réservation terminée ou annulée (Admin)
      */
     #[Route('/admin/reservations/{id}', name: 'admin_delete_reservation', methods: ['DELETE'])]
     public function deleteReservation(Request $request, int $id): JsonResponse
@@ -623,9 +623,9 @@ class ReservationController extends AbstractController
             return $this->json(['error' => 'Réservation non trouvée'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($reservation->getStatut() !== 'completed') {
+        if (!in_array($reservation->getStatut(), ['completed', 'cancelled'], true)) {
             return $this->json([
-                'error' => 'Seules les courses terminées peuvent être supprimées',
+                'error' => 'Seules les courses terminées ou annulées peuvent être supprimées',
             ], Response::HTTP_BAD_REQUEST);
         }
 

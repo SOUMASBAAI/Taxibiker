@@ -8,6 +8,7 @@ import {
 } from "../../utils/transportConfirmation";
 
 const EDITABLE_STATUSES = ["Acceptée", "À confirmer", "En cours"];
+const DELETABLE_STATUSES = ["Terminée", "Annulée", "Refusée"];
 
 export default function ReservationModal({
   reservation,
@@ -458,31 +459,29 @@ ${invoiceData.email}`;
             </button>
           )}
           {reservation.status === "Terminée" && (
-            <>
-              <button
-                onClick={() => setShowInvoiceModal(true)}
-                className="px-4 py-2 rounded bg-green-600 hover:bg-green-500 transition"
-              >
-                Créer une facture
-              </button>
-              {onDelete && (
-                <button
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        "Supprimer définitivement cette course terminée ? Cette action est irréversible."
-                      )
-                    ) {
-                      onDelete(reservation.id, reservation.type);
-                      onClose();
-                    }
-                  }}
-                  className="px-4 py-2 rounded bg-red-700 hover:bg-red-600 transition"
-                >
-                  Supprimer
-                </button>
-              )}
-            </>
+            <button
+              onClick={() => setShowInvoiceModal(true)}
+              className="px-4 py-2 rounded bg-green-600 hover:bg-green-500 transition"
+            >
+              Créer une facture
+            </button>
+          )}
+          {onDelete && DELETABLE_STATUSES.includes(reservation.status) && (
+            <button
+              onClick={() => {
+                if (
+                  window.confirm(
+                    "Supprimer définitivement cette course ? Cette action est irréversible."
+                  )
+                ) {
+                  onDelete(reservation.id, reservation.type);
+                  onClose();
+                }
+              }}
+              className="px-4 py-2 rounded bg-red-700 hover:bg-red-600 transition"
+            >
+              Supprimer
+            </button>
           )}
         </div>
       </div>
