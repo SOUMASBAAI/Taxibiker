@@ -60,7 +60,6 @@ export default function DashboardHeader({ onNavigate }) {
                     className="h-20 w-auto object-contain hover:scale-105 transition-transform duration-300"
                   />
                               </a>
-              <p className="text-xs text-gray-400 -mt-1">Dashboard</p>
             </div>
           </div>
 

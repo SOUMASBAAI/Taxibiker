@@ -186,6 +186,8 @@
 
             <p>Nous espérons que votre trajet s'est bien passé. N'hésitez pas à nous recontacter pour vos prochains déplacements.</p>
 
+            {% include 'emails/_review_request.html.twig' %}
+
             {% else %}
             <p>Le statut de votre réservation du <strong>{{ date }}</strong> à <strong>{{ time }}</strong> a été mis à jour : <strong>{{ status }}</strong>.</p>
             {% endif %}

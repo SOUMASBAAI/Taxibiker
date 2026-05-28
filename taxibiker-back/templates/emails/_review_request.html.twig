@@ -1,0 +1,31 @@
+{# Liens alignés sur la page d'accueil (section avis clients) #}
+{% set tripadvisor_url = tripadvisor_url|default('https://www.tripadvisor.fr/Attraction_Review-g187147-d28863317-Reviews-Taxi_Biker_Paris-Paris_Ile_de_France.html') %}
+{% set google_url = google_url|default('https://www.google.com/search?q=Taxi+Biker+Paris+Avis') %}
+
+<div style="margin: 28px 0; padding: 20px; background: #FFF7ED; border: 1px solid #FDBA74; border-radius: 12px; text-align: center;">
+    <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold; color: #9A3412;">
+        Votre avis compte pour nous
+    </p>
+    <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.5; color: #7C2D12;">
+        Si vous avez apprécié notre service, merci de laisser un avis sur TripAdvisor ou Google.
+        Cela nous aide à faire connaître Taxi Biker Paris.
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+        <tr>
+            <td style="padding: 6px;">
+                <a href="{{ tripadvisor_url }}"
+                   style="display: inline-block; padding: 12px 20px; background: #DD5212; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; border-radius: 8px;">
+                    ★ Laisser un avis TripAdvisor
+                </a>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 6px;">
+                <a href="{{ google_url }}"
+                   style="display: inline-block; padding: 12px 20px; background: #1a73e8; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; border-radius: 8px;">
+                    ★ Laisser un avis Google
+                </a>
+            </td>
+        </tr>
+    </table>
+</div>
