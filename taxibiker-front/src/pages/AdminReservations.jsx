@@ -369,7 +369,7 @@ export default function AdminReservations() {
           <>
             {inProgressReservations.length === 0 ? (
               <div className="text-center py-12 bg-gray-800/50 rounded-xl">
-                <div className="text-6xl mb-4">🚕</div>
+                <div className="text-6xl mb-4">🏍️</div>
                 <h3 className="text-xl font-semibold mb-2">
                   Aucune course en cours
                 </h3>

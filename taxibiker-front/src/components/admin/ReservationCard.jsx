@@ -5,6 +5,7 @@ import {
   FaClock,
   FaSuitcase,
   FaEuroSign,
+  FaMotorcycle,
 } from "react-icons/fa";
 
 export default function ReservationCard({ reservation, onClick }) {
@@ -25,7 +26,8 @@ export default function ReservationCard({ reservation, onClick }) {
   };
 
   const getTypeIcon = (type) => {
-    return type === "hourly" ? "⏰" : "🚕";
+    if (type === "hourly") return "⏰";
+    return <FaMotorcycle className="text-sm" />;
   };
 
   return (

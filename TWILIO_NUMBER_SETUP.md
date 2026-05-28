@@ -53,7 +53,7 @@ Name: taxibiker_reservation_confirmation
 Category: TRANSACTIONAL
 Language: French (fr)
 
-🚕 *TAXI BIKER PARIS - Confirmation*
+🏍️ *TAXI BIKER PARIS - Confirmation*
 
 Bonjour {{1}},
 Réservation reçue pour le {{2}} à {{3}}
@@ -71,7 +71,7 @@ Name: taxibiker_status_update
 Category: TRANSACTIONAL
 Language: French (fr)
 
-🚕 *TAXI BIKER PARIS - Mise à jour*
+🏍️ *TAXI BIKER PARIS - Mise à jour*
 
 Bonjour {{1}},
 Votre réservation du {{2}} : {{3}}

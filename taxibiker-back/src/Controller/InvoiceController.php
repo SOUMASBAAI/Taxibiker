@@ -70,8 +70,6 @@ class InvoiceController extends AbstractController
             }
 
             $companyName = $this->parameterBag->get('company.name') . ' ' . $this->parameterBag->get('company.driver_name');
-            $paymentMethod = $reservation->getPaymentMethod();
-            $paymentLabel = $paymentMethod === 'credit' ? 'en compte' : 'à la course';
 
             $invoiceData = [
                 'companyName' => $companyName,
@@ -85,7 +83,7 @@ class InvoiceController extends AbstractController
                 'serviceDate' => $reservation->getDate()->format('d/m/Y'),
                 'serviceTime' => $this->formatServiceTime($reservation->getDate()),
                 'price' => (float) $reservation->getPrice(),
-                'paymentLabel' => $paymentLabel,
+                'paymentLabel' => 'course',
             ];
 
             if ($reservationType === 'classic') {

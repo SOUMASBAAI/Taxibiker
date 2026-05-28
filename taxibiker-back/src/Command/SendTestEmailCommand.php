@@ -41,7 +41,7 @@ class SendTestEmailCommand extends Command
             $email = (new Email())
                 ->from('contact@taxibikerparis.com')
                 ->to($toEmail)
-                ->subject('🚕 Test Taxi Biker Paris - Configuration Email')
+                ->subject('🏍️ Test Taxi Biker Paris - Configuration Email')
                 ->html('
                     <h1>Test de configuration email</h1>
                     <p>Bonjour,</p>

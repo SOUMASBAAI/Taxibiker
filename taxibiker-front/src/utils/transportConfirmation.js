@@ -23,8 +23,8 @@ export function formatTransportTime(timeStr) {
   return minutes === 0 ? `${hour}h` : `${hour}h${String(minutes).padStart(2, "0")}`;
 }
 
-export function mapPaymentLabel(paymentMethod) {
-  return paymentMethod === "credit" ? "en compte" : "à la course";
+export function mapPaymentLabel(_paymentMethod) {
+  return "course";
 }
 
 export function buildTransportInfos(departure, arrival) {

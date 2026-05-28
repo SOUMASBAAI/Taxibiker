@@ -9,7 +9,6 @@ import authService from "../services/authService";
 import WhatsappButton from "../components/WhatsappButton";
 import {
   FaMotorcycle,
-  FaClock,
   FaEdit,
   FaTimes,
   FaEye,
@@ -597,7 +596,7 @@ Les modifications s'appliquent uniquement à l'heure, la date et le
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <div className="bg-green-500/20 p-2 rounded-lg">
-                          <FaClock className="text-green-400 text-lg" />
+                          <FaMotorcycle className="text-green-400 text-lg" />
                         </div>
                         <div>
                           <h3 className="text-base font-bold text-white">
@@ -696,7 +695,7 @@ Les modifications s'appliquent uniquement à l'heure, la date et le
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <div className="bg-yellow-500/20 p-2 rounded-lg">
-                          <FaClock className="text-yellow-400 text-lg" />
+                          <FaMotorcycle className="text-yellow-400 text-lg" />
                         </div>
                         <div>
                           <h3 className="text-base font-bold text-white">
@@ -848,7 +847,7 @@ Les modifications s'appliquent uniquement à l'heure, la date et le
                               : "bg-gray-500/20"
                           }`}
                         >
-                          <FaClock
+                          <FaMotorcycle
                             className={`text-lg ${
                               res.status === "Terminée"
                                 ? "text-green-400"

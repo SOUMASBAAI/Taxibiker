@@ -1053,10 +1053,7 @@ class ReservationController extends AbstractController
 
     private function mapPaymentMethodLabel(string $paymentMethod): string
     {
-        return match ($paymentMethod) {
-            'credit' => 'en compte',
-            default => 'à la course',
-        };
+        return 'course';
     }
 
     private function buildTransportInfos(?string $departure, ?string $arrival): string

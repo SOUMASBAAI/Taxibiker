@@ -64,7 +64,7 @@ Category: TRANSACTIONAL
 Language: French (fr)
 
 Content:
-🚕 *TAXI BIKER PARIS - Confirmation de réservation*
+🏍️ *TAXI BIKER PARIS - Confirmation de réservation*
 
 Bonjour {{1}},
 
@@ -90,7 +90,7 @@ Category: TRANSACTIONAL
 Language: French (fr)
 
 Content:
-🚕 *TAXI BIKER PARIS - Mise à jour*
+🏍️ *TAXI BIKER PARIS - Mise à jour*
 
 Bonjour {{1}},
 
@@ -100,7 +100,7 @@ Votre réservation du {{2}} à {{3}} a été *confirmée* !
 📍 {{4}} → {{5}}
 💰 Prix : {{6}}€
 
-Nous serons là à l'heure ! 🚕
+Nous serons là à l'heure ! 🏍️
 ```
 
 #### Template 3: Reservation Cancelled
@@ -111,7 +111,7 @@ Category: TRANSACTIONAL
 Language: French (fr)
 
 Content:
-🚕 *TAXI BIKER PARIS - Mise à jour*
+🏍️ *TAXI BIKER PARIS - Mise à jour*
 
 Bonjour {{1}},
 

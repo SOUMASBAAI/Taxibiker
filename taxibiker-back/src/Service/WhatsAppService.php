@@ -427,7 +427,7 @@ class WhatsAppService
         $price = $data['price'] ?? '';
         $type = $data['type'] ?? 'classic';
 
-        $message = "🚕 *TAXI BIKER PARIS - Confirmation de réservation*\n\n";
+        $message = "🏍️ *TAXI BIKER PARIS - Confirmation de réservation*\n\n";
         $message .= "Bonjour {$data['firstname']},\n\n";
         $message .= "Votre demande de course a été reçue :\n\n";
         $message .= "📅 *Date :* $date\n";
@@ -462,7 +462,7 @@ class WhatsAppService
      */
     private function buildStatusUpdateMessage(array $data, string $status): string
     {
-        $message = "🚕 *TAXI BIKER PARIS - Mise à jour*\n\n";
+        $message = "🏍️ *TAXI BIKER PARIS - Mise à jour*\n\n";
         $message .= "Bonjour {$data['firstname']},\n\n";
         
         switch ($status) {
@@ -471,7 +471,7 @@ class WhatsAppService
                 $message .= "Votre réservation du {$data['date']} à {$data['time']} a été *confirmée* !\n\n";
                 $message .= "📍 {$data['from']} → {$data['to']}\n";
                 $message .= "💰 Prix : {$data['price']}€\n\n";
-                $message .= "Nous serons là à l'heure ! 🚕";
+                $message .= "Nous serons là à l'heure ! 🏍️";
                 break;
                 
             case 'Refusée':
@@ -481,7 +481,7 @@ class WhatsAppService
                 break;
                 
             case 'En cours':
-                $message .= "🚗 *Course en cours*\n";
+                $message .= "🏍️ *Course en cours*\n";
                 $message .= "Votre chauffeur est en route !\n";
                 $message .= "Merci de vous tenir prêt(e). 👍";
                 break;
