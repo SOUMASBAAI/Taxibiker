@@ -69,10 +69,8 @@ class InvoiceController extends AbstractController
                 ], Response::HTTP_BAD_REQUEST);
             }
 
-            $companyName = $this->parameterBag->get('company.name') . ' ' . $this->parameterBag->get('company.driver_name');
-
             $invoiceData = [
-                'companyName' => $companyName,
+                'companyName' => $this->parameterBag->get('company.name'),
                 'address' => $this->parameterBag->get('company.address'),
                 'phone' => $this->parameterBag->get('company.phone'),
                 'email' => $this->parameterBag->get('company.email'),

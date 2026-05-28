@@ -14,7 +14,7 @@ export function buildInvoiceDataFromReservation(reservation, overrides = {}) {
   const stopFee = reservation.stop && reservation.stop !== "Aucun" ? 10 : 0;
 
   return {
-    companyName: `${COMPANY_INFO.name} ${COMPANY_INFO.driverName}`,
+    companyName: COMPANY_INFO.name,
     address: COMPANY_ADDRESS,
     phone: COMPANY_INFO.phone,
     email: COMPANY_INFO.email,
