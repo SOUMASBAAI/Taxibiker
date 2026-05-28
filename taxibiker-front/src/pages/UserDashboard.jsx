@@ -481,7 +481,7 @@ Les modifications s'appliquent uniquement à l'heure, la date et le
           <section className="mb-10">
             {inProgressReservations.length === 0 ? (
               <div className="text-center py-12 bg-gray-800/50 rounded-xl">
-                <div className="text-6xl mb-4">🚕</div>
+                <FaMotorcycle className="text-[#DD5212] text-6xl mb-4 mx-auto" />
                 <h3 className="text-xl font-semibold mb-2">
                   Aucune course en cours
                 </h3>
@@ -499,7 +499,7 @@ Les modifications s'appliquent uniquement à l'heure, la date et le
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <div className="bg-blue-500/20 p-2 rounded-lg">
-                          <FaClock className="text-blue-400 text-lg" />
+                          <FaMotorcycle className="text-blue-400 text-lg" />
                         </div>
                         <div>
                           <h3 className="text-base font-bold text-white">
@@ -819,7 +819,9 @@ Les modifications s'appliquent uniquement à l'heure, la date et le
                     key={`${res.type}-${res.id}`}
                     className="group relative bg-black border border-gray-700/50 rounded-2xl p-5 hover:border-orange-500/50 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300"
                   >
-                    {res.status === "Terminée" && (
+                    {(res.status === "Terminée" ||
+                      res.status === "Annulée" ||
+                      res.status === "Refusée") && (
                       <button
                         type="button"
                         onClick={(e) => handleDeleteReservation(res, e)}

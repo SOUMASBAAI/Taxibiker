@@ -670,9 +670,9 @@ class ReservationController extends AbstractController
             return $this->json(['error' => 'Cette réservation ne vous appartient pas'], Response::HTTP_FORBIDDEN);
         }
 
-        if ($reservation->getStatut() !== 'completed') {
+        if (!in_array($reservation->getStatut(), ['completed', 'cancelled'], true)) {
             return $this->json([
-                'error' => 'Seules les courses terminées peuvent être supprimées',
+                'error' => 'Seules les courses terminées ou annulées peuvent être supprimées',
             ], Response::HTTP_BAD_REQUEST);
         }
 
