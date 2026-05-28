@@ -652,7 +652,7 @@ const AddReservationModal = ({
         if (result.success && result.data) {
           setForm((prev) => ({
             ...prev,
-            price: Math.round(result.data.totalPrice * 100) / 100, // Round to 2 decimals
+            price: Math.floor(result.data.totalPrice),
           }));
         } else {
           console.error("Pricing error:", result.error);
@@ -703,7 +703,7 @@ const AddReservationModal = ({
         if (result.success && result.data) {
           setForm((prev) => ({
             ...prev,
-            price: Math.round(result.data.totalPrice * 100) / 100, // Round to 2 decimals
+            price: Math.floor(result.data.totalPrice),
           }));
         } else {
           console.error("Pricing error:", result.error);

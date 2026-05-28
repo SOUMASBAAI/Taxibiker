@@ -274,6 +274,71 @@ class ClientController extends AbstractController
         }
     }
 
+    #[Route('/{id}/regularize-credit', name: 'regularize_credit', methods: ['POST'])]
+    public function regularizeClientCredit(int $id, Request $request): JsonResponse
+    {
+        try {
+            $client = $this->userRepository->find($id);
+
+            if (!$client || !in_array('ROLE_USER', $client->getRoles(), true)) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Client non trouvé',
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            if (!$client->isMonthlyCreditEnabled()) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Ce client n\'a pas le paiement à crédit activé',
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $creditAmount = (float) $client->getCurrentCredit();
+            if ($creditAmount <= 0) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Aucun montant à régulariser pour ce client',
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $data = json_decode($request->getContent(), true) ?? [];
+            $notes = $data['notes'] ?? 'Régularisation administrative';
+
+            $regularization = new CreditRegularization();
+            $regularization->setUser($client);
+            $regularization->setAmount((string) $creditAmount);
+            $regularization->setMonth(date('Y-m'));
+            $regularization->setRegularizedAt(new \DateTime());
+            $regularization->setNotes($notes);
+
+            $this->entityManager->persist($regularization);
+            $client->resetCredit();
+            $this->entityManager->flush();
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Crédit régularisé avec succès',
+                'client' => [
+                    'id' => $client->getId(),
+                    'firstname' => $client->getFirstName(),
+                    'lastname' => $client->getLastName(),
+                    'email' => $client->getEmail(),
+                    'phone' => $client->getPhoneNumber(),
+                    'roles' => $client->getRoles(),
+                    'monthly_credit_enabled' => $client->isMonthlyCreditEnabled(),
+                    'current_credit' => (float) $client->getCurrentCredit(),
+                ],
+                'regularized_amount' => $creditAmount,
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'error' => 'Erreur lors de la régularisation: ' . $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
     #[Route('/{id}', name: 'update', methods: ['PUT', 'PATCH'])]
     public function updateClient(int $id, Request $request): JsonResponse
     {

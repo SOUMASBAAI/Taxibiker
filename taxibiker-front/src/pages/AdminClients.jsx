@@ -165,6 +165,10 @@ export default function AdminClients() {
             setClients((prev) =>
               prev.map((c) => (c.id === updatedClient.id ? updatedClient : c))
             );
+            showNotification(
+              "success",
+              `Crédit de ${updatedClient.firstname} ${updatedClient.lastname} régularisé`
+            );
           }}
           isLoading={isLoading}
         />

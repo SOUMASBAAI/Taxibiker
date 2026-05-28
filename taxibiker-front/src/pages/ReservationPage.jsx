@@ -1793,7 +1793,7 @@ export default function ReservationPage() {
             {isCalculatingPrice
               ? "Calcul en cours..."
               : totalPrice
-              ? `Réserver - ${totalPrice.toFixed(2)}€`
+              ? `Réserver - ${Math.floor(totalPrice)}€`
               : "Réserver"}
           </button>
         </div>

@@ -138,7 +138,9 @@ class ZonePricingService
             $urgentBookingFee = self::URGENT_BOOKING_FEE;
         }
         
-        $totalPrice = $basePrice + $timeBasedFee + $stopFee + $weekendHolidayFee + $excessBaggageFee + $urgentBookingFee;
+        $totalPrice = $this->roundPriceDown(
+            $basePrice + $timeBasedFee + $stopFee + $weekendHolidayFee + $excessBaggageFee + $urgentBookingFee
+        );
 
         $result = [
             'mode' => $mode,
@@ -534,6 +536,14 @@ class ZonePricingService
             $this->locationsCache = $this->zoneLocationRepository->findAllGroupedByZone();
         }
         return $this->locationsCache;
+    }
+
+    /**
+     * Arrondit un tarif à l'euro inférieur (pas de centimes affichés)
+     */
+    private function roundPriceDown(float $price): float
+    {
+        return (float) floor($price);
     }
 
     /**

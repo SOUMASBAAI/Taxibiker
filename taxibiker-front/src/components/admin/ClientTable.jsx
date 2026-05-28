@@ -14,6 +14,7 @@ import AddClientModal from "./AddClientModal";
 import RegularizeCreditModal from "./RegularizeCreditModal";
 import ClientCreditHistoryModal from "./ClientCreditHistoryModal";
 import { buildApiUrl } from "../../config/api.js";
+import authService from "../../services/authService";
 
 export default function ClientTable({
   clients,
@@ -28,29 +29,23 @@ export default function ClientTable({
   const [historyClient, setHistoryClient] = useState(null);
 
   const handleRegularizeCredit = async (clientId) => {
-    try {
-      const response = await fetch(buildApiUrl("user/credit/reset"), {
+    const response = await authService.authenticatedRequest(
+      buildApiUrl(`admin/clients/${clientId}/regularize-credit`),
+      {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ user_id: clientId }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Mettre à jour le client dans la liste
-        if (onUpdateClient) {
-          onUpdateClient({ ...regularizeClient, current_credit: 0 });
-        }
-        alert("Crédit régularisé avec succès !");
-      } else {
-        alert("Erreur lors de la régularisation : " + result.error);
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: "Régularisation administrative" }),
       }
-    } catch (error) {
-      console.error("Erreur:", error);
-      alert("Erreur de connexion au serveur");
+    );
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error || "Erreur lors de la régularisation");
+    }
+
+    if (onUpdateClient && result.client) {
+      onUpdateClient(result.client);
     }
   };
 
@@ -220,15 +215,18 @@ export default function ClientTable({
                               >
                                 <FaHistory className="text-sm" />
                               </button>
-                              {client.current_credit > 0 && (
-                                <button
-                                  onClick={() => setRegularizeClient(client)}
-                                  className="flex items-center justify-center bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 hover:text-orange-300 p-2 rounded-lg font-medium transition-all duration-200 border border-orange-500/30 hover:border-orange-500/50"
-                                  title="Régulariser"
-                                >
-                                  <FaCheck className="text-sm" />
-                                </button>
-                              )}
+                              <button
+                                onClick={() => setRegularizeClient(client)}
+                                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg font-medium text-sm transition-all duration-200 border ${
+                                  client.current_credit > 0
+                                    ? "bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 hover:text-orange-300 border-orange-500/30 hover:border-orange-500/50"
+                                    : "bg-gray-600/20 text-gray-500 border-gray-600/30 cursor-default opacity-60"
+                                }`}
+                                title="Régulariser le crédit"
+                              >
+                                <FaCheck className="text-sm shrink-0" />
+                                <span className="hidden xl:inline">Régulariser</span>
+                              </button>
                             </>
                           )}
                           <button
@@ -330,16 +328,20 @@ export default function ClientTable({
                         <FaHistory className="text-sm" />
                       </button>
                     )}
-                    {client.monthly_credit_enabled &&
-                      client.current_credit > 0 && (
-                        <button
-                          onClick={() => setRegularizeClient(client)}
-                          className="flex items-center justify-center bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 hover:text-orange-300 p-3 rounded-lg font-medium transition-all duration-200 border border-orange-500/30 hover:border-orange-500/50 flex-1"
-                          title="Régulariser"
-                        >
-                          <FaCheck className="text-sm" />
-                        </button>
-                      )}
+                    {client.monthly_credit_enabled && (
+                      <button
+                        onClick={() => setRegularizeClient(client)}
+                        className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg font-medium text-sm transition-all duration-200 border flex-1 ${
+                          client.current_credit > 0
+                            ? "bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 border-orange-500/30"
+                            : "bg-gray-600/20 text-gray-500 border-gray-600/30"
+                        }`}
+                        title="Régulariser le crédit"
+                      >
+                        <FaCheck className="text-sm" />
+                        Régulariser
+                      </button>
+                    )}
                     <button
                       onClick={() => onRemove(client.id)}
                       className="flex items-center justify-center bg-red-600/20 hover:bg-red-600/30 text-red-400 hover:text-red-300 p-3 rounded-lg font-medium transition-all duration-200 border border-red-500/30 hover:border-red-500/50 flex-1"
