@@ -352,6 +352,7 @@ const AddReservationModal = ({
   const [clientSuggestions, setClientSuggestions] = useState([]);
   const [showClientSuggestions, setShowClientSuggestions] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState("immediate");
   const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
 
   const fromRef = useRef(null);
@@ -383,6 +384,7 @@ const AddReservationModal = ({
 
   const selectClient = (client) => {
     setSelectedClient(client);
+    setPaymentMethod("immediate");
     setClientSearch(`${client.firstname} ${client.lastname}`);
     setForm((prev) => ({
       ...prev,
@@ -396,6 +398,7 @@ const AddReservationModal = ({
 
   const clearClientSelection = () => {
     setSelectedClient(null);
+    setPaymentMethod("immediate");
     setClientSearch("");
     setForm((prev) => ({
       ...prev,
@@ -811,6 +814,8 @@ const AddReservationModal = ({
       to: tripType === "classic" ? form.to : form.from, // Pour time-based, to = from
       tripType: tripType,
       duration: tripType === "time" ? form.duration : null,
+      paymentMethod:
+        selectedClient?.monthly_credit_enabled ? paymentMethod : "immediate",
     };
     
     try {
@@ -837,6 +842,7 @@ const AddReservationModal = ({
       setStopLocation(null);
       setSelectedClient(null);
       setClientSearch("");
+      setPaymentMethod("immediate");
       onClose();
     } catch (error) {
       // Erreur déjà gérée dans handleAddReservation
@@ -945,6 +951,13 @@ const AddReservationModal = ({
                       <div className="text-gray-300 text-sm">
                         {client.email} • {client.phone}
                       </div>
+                      {client.monthly_credit_enabled && (
+                        <div className="text-blue-400 text-xs mt-1">
+                          Crédit mensuel activé
+                          {client.current_credit > 0 &&
+                            ` — solde: ${client.current_credit}€`}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1250,6 +1263,69 @@ const AddReservationModal = ({
             />
             <label className="text-sm text-gray-300">Bagages</label>
           </div>
+
+          {selectedClient?.monthly_credit_enabled && (
+            <div className="rounded-lg border border-gray-600 bg-gray-700/50 p-4 space-y-3">
+              <p className="text-sm font-medium text-white">Mode de paiement</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label
+                  className={`flex items-start gap-2 p-3 rounded-lg border cursor-pointer ${
+                    paymentMethod === "immediate"
+                      ? "border-orange-500 bg-orange-500/10"
+                      : "border-gray-600"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="adminPaymentMethod"
+                    value="immediate"
+                    checked={paymentMethod === "immediate"}
+                    onChange={() => setPaymentMethod("immediate")}
+                    className="mt-1 accent-orange-500"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium text-white">
+                      Paiement immédiat
+                    </span>
+                    <span className="block text-xs text-gray-400">
+                      Payé sur place
+                    </span>
+                  </span>
+                </label>
+                <label
+                  className={`flex items-start gap-2 p-3 rounded-lg border cursor-pointer ${
+                    paymentMethod === "credit"
+                      ? "border-orange-500 bg-orange-500/10"
+                      : "border-gray-600"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="adminPaymentMethod"
+                    value="credit"
+                    checked={paymentMethod === "credit"}
+                    onChange={() => setPaymentMethod("credit")}
+                    className="mt-1 accent-orange-500"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium text-white">
+                      Crédit mensuel
+                    </span>
+                    <span className="block text-xs text-gray-400">
+                      Ajouté au compte client
+                      {selectedClient.current_credit > 0 &&
+                        ` (${selectedClient.current_credit}€ dus)`}
+                    </span>
+                  </span>
+                </label>
+              </div>
+              {paymentMethod === "credit" && (
+                <p className="text-xs text-blue-300">
+                  Le montant de la course sera ajouté au crédit du client.
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="flex space-x-3 pt-4">
             <button
@@ -1560,6 +1636,7 @@ export default function AdminDashboard() {
             price: newReservation.price,
             tripType: newReservation.tripType || "classic",
             duration: newReservation.duration || null,
+            paymentMethod: newReservation.paymentMethod || "immediate",
           }),
         }
       );
@@ -1567,8 +1644,10 @@ export default function AdminDashboard() {
       const result = await response.json();
 
       if (result.success && result.reservation) {
-        // Recharger toutes les réservations depuis le backend
         await fetchReservations();
+        if (newReservation.paymentMethod === "credit") {
+          await fetchClients();
+        }
       } else {
         alert("Erreur lors de la création de la réservation: " + (result.error || "Erreur inconnue"));
         throw new Error(result.error || "Erreur inconnue");

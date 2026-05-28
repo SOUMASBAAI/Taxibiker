@@ -201,6 +201,16 @@ class ReservationController extends AbstractController
             $tripType = $data['tripType'] ?? 'classic';
             $mode = ($tripType === 'time' || $tripType === 'hourly') ? 'hourly' : 'classic';
 
+            $paymentMethod = $data['paymentMethod'] ?? 'immediate';
+            if (!in_array($paymentMethod, ['immediate', 'credit'], true)) {
+                $paymentMethod = 'immediate';
+            }
+            if ($paymentMethod === 'credit' && !$client->isMonthlyCreditEnabled()) {
+                return $this->json([
+                    'error' => 'Le paiement à crédit n\'est pas activé pour ce client',
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
             if ($mode === 'hourly') {
                 // Course à la durée
                 $reservation = new FlatRateBooking();
@@ -212,7 +222,6 @@ class ReservationController extends AbstractController
                 $reservation->setExcessBaggage($data['luggage'] ?? false);
                 $reservation->setPrice((string) $data['price']);
                 $reservation->setStatut('confirmed'); // Admin crée directement en "Acceptée"
-                $reservation->setPaymentMethod('immediate');
             } else {
                 // Course classique
                 if (!isset($data['to'])) {
@@ -230,18 +239,28 @@ class ReservationController extends AbstractController
                 $reservation->setPrice((string) $data['price']);
                 $reservation->setStop($data['stop'] ?? null);
                 $reservation->setStatut('confirmed'); // Admin crée directement en "Acceptée"
-                $reservation->setPaymentMethod('immediate');
             }
 
+            $reservation->setPaymentMethod($paymentMethod);
+
             $this->entityManager->persist($reservation);
+
+            if ($paymentMethod === 'credit') {
+                $client->addToCredit($reservation->getPrice());
+            }
+
             $this->entityManager->flush();
 
             // Envoyer les notifications WhatsApp
             $this->sendEmailNotifications($reservation, $client, $data);
 
+            $message = $paymentMethod === 'credit'
+                ? 'Réservation créée. Montant ajouté au crédit mensuel du client.'
+                : 'Réservation créée avec succès';
+
             return $this->json([
                 'success' => true,
-                'message' => 'Réservation créée avec succès',
+                'message' => $message,
                 'reservation' => [
                     'id' => $reservation->getId(),
                     'type' => $mode,
@@ -255,7 +274,8 @@ class ReservationController extends AbstractController
                     'arrival' => $reservation->getArrival(),
                     'date' => $date->format('Y-m-d H:i:s'),
                     'price' => $reservation->getPrice(),
-                    'status' => $reservation->getStatut()
+                    'status' => $reservation->getStatut(),
+                    'paymentMethod' => $paymentMethod,
                 ]
             ], Response::HTTP_CREATED);
 
