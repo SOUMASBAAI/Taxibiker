@@ -1782,34 +1782,10 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* No Reservations Message */}
-        {!isLoading && reservations.length === 0 && (
-          <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-12">
-            <div className="text-center">
-              <div className="bg-orange-500/20 p-6 rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center">
-                <FaMotorcycle className="text-4xl text-orange-400" />
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-3">
-                Aucune réservation
-              </h3>
-              <p className="text-gray-400 mb-8 text-lg max-w-md mx-auto">
-                Les nouvelles réservations de vos clients apparaîtront ici
-              </p>
-              <Link
-                to="/reservation"
-                className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-orange-500/25 transition-all duration-200 transform hover:scale-105"
-              >
-                <FaPlus className="text-sm" />
-                Créer une réservation
-              </Link>
-            </div>
-          </div>
-        )}
-
         {/* Weekly Calendar */}
-        {!isLoading && reservations.length > 0 && (
+        {!isLoading && (
           <section>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
               <div className="flex items-center gap-3">
                 <div className="bg-blue-500 p-3 rounded-xl">
                   <FaCalendarAlt className="text-white text-xl" />
@@ -1823,13 +1799,26 @@ export default function AdminDashboard() {
                   </p>
                 </div>
               </div>
-              <Link
-                to="/admin/reservations"
-                className="flex items-center gap-2 px-6 py-3 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-xl font-medium transition-all duration-200 border border-blue-500/30"
-              >
-                <FaEye className="text-sm" />
-                Voir toutes
-              </Link>
+              <div className="flex items-center gap-3 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedDate(new Date());
+                    setShowAddModal(true);
+                  }}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-orange-500/25"
+                >
+                  <FaPlus className="text-sm" />
+                  Créer une réservation
+                </button>
+                <Link
+                  to="/admin/reservations"
+                  className="flex items-center gap-2 px-6 py-3 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-xl font-medium transition-all duration-200 border border-blue-500/30"
+                >
+                  <FaEye className="text-sm" />
+                  Voir toutes
+                </Link>
+              </div>
             </div>
             <WeeklyCalendar
               reservations={reservations}
