@@ -7,9 +7,9 @@ import {
   FaSignOutAlt,
   FaBars,
   FaTimes,
-  FaMotorcycle,
   FaUserShield,
 } from "react-icons/fa";
+import logo from "../../assets/equipements/logo.png";
 
 export default function AdminHeader() {
   const [isOpen, setIsOpen] = useState(false);
@@ -44,18 +44,14 @@ export default function AdminHeader() {
         <div className="flex items-center justify-between h-20">
           {/* Logo et Branding Admin */}
           <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-2.5 rounded-xl shadow-lg">
-              <FaMotorcycle className="text-white text-xl" />
-            </div>
-            <div>
-              <Link
-                to="/admin/dashboard"
-                className="text-2xl font-bold bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent hover:from-blue-400 hover:to-blue-300 transition-all duration-300"
-              >
-                TAXI BIKER PARIS
-              </Link>
-              <p className="text-xs text-blue-300 -mt-1">Administration</p>
-            </div>
+            <Link to="/admin/dashboard" className="flex items-center gap-3">
+              <img
+                src={logo}
+                alt="Taxi Biker Paris"
+                className="h-16 w-auto object-contain hover:scale-105 transition-transform duration-300"
+              />
+              <p className="text-xs text-blue-300 hidden sm:block">Administration</p>
+            </Link>
           </div>
 
           {/* Navigation Desktop */}

@@ -1,10 +1,6 @@
 import { useState } from "react";
 import { FaBars, FaTimes, FaMotorcycle, FaUser } from "react-icons/fa";
-import logo from "../assets/equipements/logo.jpeg";
-
-
-// ou ../../assets/equipements/logo.jpeg selon ton arborescence
-
+import logo from "../assets/equipements/logo.png";
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
