@@ -31,30 +31,6 @@ function hasValidStop(stop) {
   return Boolean(stop && stop !== "Aucun");
 }
 
-export function buildAppleMapsDirectionsUrl(reservation) {
-  const from = reservation.from?.trim();
-  const to = (reservation.to || reservation.from)?.trim();
-  const stop = reservation.stop?.trim();
-
-  const url = new URL("https://maps.apple.com/");
-  url.searchParams.set("dirflg", "d");
-
-  if (from) {
-    url.searchParams.set("saddr", from);
-  }
-
-  if (hasValidStop(stop) && to) {
-    url.searchParams.append("daddr", stop);
-    url.searchParams.append("daddr", to);
-  } else if (to) {
-    url.searchParams.set("daddr", to);
-  } else if (from) {
-    url.searchParams.set("q", from);
-  }
-
-  return url.toString();
-}
-
 export function buildAppleCalendarIcs(reservation) {
   const start = parseReservationDateTime(reservation.date, reservation.time);
   const end = new Date(start);
@@ -63,7 +39,6 @@ export function buildAppleCalendarIcs(reservation) {
   const clientName = `${reservation.firstname || ""} ${reservation.lastname || ""}`.trim();
   const isHourly =
     reservation.type === "hourly" || reservation.tripType === "time";
-  const mapsUrl = buildAppleMapsDirectionsUrl(reservation);
 
   const descriptionLines = [
     `Client : ${clientName}`,
@@ -72,12 +47,9 @@ export function buildAppleCalendarIcs(reservation) {
     isHourly
       ? `Course horaire : ${getTripDurationHours(reservation)}h`
       : `Arrivée : ${reservation.to || "—"}`,
-    hasValidStop(reservation.stop)
-      ? `Stop : ${reservation.stop}`
-      : null,
+    hasValidStop(reservation.stop) ? `Stop : ${reservation.stop}` : null,
     reservation.luggage ? "Bagage supplémentaire : oui" : null,
     `Prix : ${reservation.price}€ TTC`,
-    `Itinéraire Apple Maps : ${mapsUrl}`,
   ].filter(Boolean);
 
   const summary = `Taxi Biker Paris - ${clientName || "Course"}`;
@@ -99,7 +71,6 @@ export function buildAppleCalendarIcs(reservation) {
     `SUMMARY:${escapeIcs(summary)}`,
     `LOCATION:${escapeIcs(location)}`,
     `DESCRIPTION:${escapeIcs(descriptionLines.join("\n"))}`,
-    `URL:${escapeIcs(mapsUrl)}`,
     "STATUS:CONFIRMED",
     "END:VEVENT",
     "END:VCALENDAR",
@@ -119,14 +90,8 @@ export function downloadAppleCalendarEvent(reservation) {
   URL.revokeObjectURL(url);
 }
 
-export function openAppleMapsDirections(reservation) {
-  const url = buildAppleMapsDirectionsUrl(reservation);
-  window.open(url, "_blank", "noopener,noreferrer");
-}
-
-export function addConfirmedRideToAppleMaps(reservation) {
+export function addConfirmedRideToAppleCalendar(reservation) {
   downloadAppleCalendarEvent(reservation);
-  openAppleMapsDirections(reservation);
 }
 
-export const CONFIRMED_APPLE_MAPS_STATUSES = ["Acceptée", "En cours"];
+export const CONFIRMED_CALENDAR_STATUSES = ["Acceptée", "En cours"];
