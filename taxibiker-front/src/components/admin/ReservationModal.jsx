@@ -10,6 +10,10 @@ import {
   buildInvoiceDataFromReservation,
   buildInvoiceHTML,
 } from "../../utils/invoice";
+import {
+  addConfirmedRideToAppleMaps,
+  CONFIRMED_APPLE_MAPS_STATUSES,
+} from "../../utils/appleMaps";
 
 const EDITABLE_STATUSES = ["Acceptée", "À confirmer", "En cours"];
 const DELETABLE_STATUSES = ["Terminée", "Annulée", "Refusée"];
@@ -312,6 +316,16 @@ ${invoiceData.email}`;
               className="px-4 py-2 rounded bg-green-600 hover:bg-green-500 transition"
             >
               Confirmer
+            </button>
+          )}
+          {CONFIRMED_APPLE_MAPS_STATUSES.includes(reservation.status) && (
+            <button
+              type="button"
+              onClick={() => addConfirmedRideToAppleMaps(reservation)}
+              className="px-4 py-2 rounded bg-[#007AFF] hover:bg-[#0066DD] transition"
+              title="Ajoute la course au calendrier Apple et ouvre l'itinéraire dans Apple Maps"
+            >
+              Apple Maps
             </button>
           )}
           {reservation.status === "Acceptée" && (
