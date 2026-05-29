@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Footer from "../components/../Footer"; // 👈 j'importe ton footer
 import authService from "../../services/authService";
-import { buildApiUrl } from "../../config/api.js";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -88,14 +89,28 @@ export default function AdminLogin() {
           />
 
           <label className="text-white mb-1">Mot de passe</label>
-          <input
-            type="password"
-            placeholder="Entrez votre mot de passe"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mb-4 px-4 py-2 rounded bg-white text-black placeholder-black focus:outline-none focus:ring-2 focus:ring-orange-500"
-            required
-          />
+          <div className="relative mb-4">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Entrez votre mot de passe"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-2 pr-12 rounded bg-white text-black placeholder-black focus:outline-none focus:ring-2 focus:ring-orange-500"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-orange-500 transition-colors"
+              aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+            >
+              {showPassword ? (
+                <FaEyeSlash className="w-5 h-5" />
+              ) : (
+                <FaEye className="w-5 h-5" />
+              )}
+            </button>
+          </div>
 
           <div className="mb-6 text-right">
             <Link
