@@ -582,6 +582,10 @@ class ReservationController extends AbstractController
                 $reservation->setPrice((string) $data['price']);
             }
 
+            if (isset($data['price'])) {
+                $reservation->setPrice((string) $data['price']);
+            }
+
             if ($isClassic && array_key_exists('stop', $data)) {
                 $reservation->setStop($data['stop'] ?: null);
             }

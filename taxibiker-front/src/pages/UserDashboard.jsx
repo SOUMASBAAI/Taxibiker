@@ -136,6 +136,8 @@ export default function UserDashboard() {
             date: dateTime.toISOString(),
             excessBaggage: updated.luggage,
             stop: updated.stop || null,
+            price: updated.price,
+            notes: updated.notes || null,
           }),
         }
       );
@@ -156,6 +158,7 @@ export default function UserDashboard() {
                   time: dateTime[1]?.substring(0, 5) || "00:00",
                   luggage: updatedReservation.excessBaggage,
                   stop: updatedReservation.stop || "",
+                  price: parseFloat(updatedReservation.price),
                   notes: updatedReservation.notes || "",
                 }
               : r
