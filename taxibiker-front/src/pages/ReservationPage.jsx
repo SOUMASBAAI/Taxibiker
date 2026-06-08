@@ -1750,6 +1750,13 @@ export default function ReservationPage() {
                   stop: stopChecked ? stopAddress : null,
                   excessBaggage: bagage,
                   notes: notes.trim() || null,
+                  transportPickup,
+                  pickupTransportRef: pickupTransportRef.trim() || null,
+                  transportDrop: tripType === "classic" ? transportDrop : null,
+                  dropTransportRef:
+                    tripType === "classic"
+                      ? dropTransportRef.trim() || null
+                      : null,
                   paymentMethod: paymentMethod,
                 };
 

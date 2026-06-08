@@ -57,8 +57,7 @@ class ReservationController extends AbstractController
         try {
             $date = new \DateTime($data['date']);
             $mode = $data['mode']; // 'classic' ou 'hourly'
-            $notes = isset($data['notes']) ? trim((string) $data['notes']) : null;
-            $notes = $notes !== '' ? $notes : null;
+            $notes = $this->buildReservationNotes($data);
             
             if ($mode === 'hourly') {
                 // Course à la durée (FlatRateBooking)
@@ -205,8 +204,7 @@ class ReservationController extends AbstractController
             // Déterminer le type de réservation
             $tripType = $data['tripType'] ?? 'classic';
             $mode = ($tripType === 'time' || $tripType === 'hourly') ? 'hourly' : 'classic';
-            $notes = isset($data['notes']) ? trim((string) $data['notes']) : null;
-            $notes = $notes !== '' ? $notes : null;
+            $notes = $this->buildReservationNotes($data);
 
             $paymentMethod = $data['paymentMethod'] ?? 'immediate';
             if (!in_array($paymentMethod, ['immediate', 'credit'], true)) {
@@ -1081,6 +1079,61 @@ class ReservationController extends AbstractController
     private function mapPaymentMethodLabel(string $paymentMethod): string
     {
         return 'course';
+    }
+
+    private function buildReservationNotes(array $data): ?string
+    {
+        $baseNotes = isset($data['notes']) ? trim((string) $data['notes']) : '';
+        $transportLines = $this->buildTransportReferenceLines($data);
+
+        if (empty($transportLines)) {
+            return $baseNotes !== '' ? $baseNotes : null;
+        }
+
+        $transportBlock = implode("\n", $transportLines);
+
+        if ($baseNotes === '') {
+            return $transportBlock;
+        }
+
+        return $baseNotes . "\n\n" . $transportBlock;
+    }
+
+    private function buildTransportReferenceLines(array $data): array
+    {
+        $lines = [];
+
+        $fromType = $this->normalizeTransportType(
+            $data['transportPickup'] ?? $data['transportFrom'] ?? null
+        );
+        $fromRef = trim((string) ($data['pickupTransportRef'] ?? $data['fromTransportRef'] ?? ''));
+        if ($fromType !== null && $fromRef !== '') {
+            $lines[] = 'Référence transport départ (' . $this->transportTypeLabel($fromType) . ') : ' . $fromRef;
+        }
+
+        $toType = $this->normalizeTransportType(
+            $data['transportDrop'] ?? $data['transportTo'] ?? null
+        );
+        $toRef = trim((string) ($data['dropTransportRef'] ?? $data['toTransportRef'] ?? ''));
+        if ($toType !== null && $toRef !== '') {
+            $lines[] = 'Référence transport arrivée (' . $this->transportTypeLabel($toType) . ') : ' . $toRef;
+        }
+
+        return $lines;
+    }
+
+    private function normalizeTransportType(mixed $type): ?string
+    {
+        if (!is_string($type)) {
+            return null;
+        }
+
+        return in_array($type, ['plane', 'train'], true) ? $type : null;
+    }
+
+    private function transportTypeLabel(string $type): string
+    {
+        return $type === 'plane' ? 'vol' : 'train';
     }
 
     private function buildTransportInfos(?string $departure, ?string $arrival): string

@@ -893,6 +893,10 @@ const AddReservationModal = ({
       tripType: tripType,
       duration: tripType === "time" ? form.duration : null,
       notes: form.notes?.trim() || "",
+      transportFrom,
+      fromTransportRef: fromTransportRef.trim() || "",
+      transportTo: tripType === "classic" ? transportTo : null,
+      toTransportRef: tripType === "classic" ? toTransportRef.trim() : "",
       paymentMethod:
         selectedClient?.monthly_credit_enabled ? paymentMethod : "immediate",
     };
@@ -1892,6 +1896,10 @@ export default function AdminDashboard() {
             to: newReservation.tripType === "classic" ? newReservation.to : newReservation.from,
             stop: newReservation.stop || null,
             notes: newReservation.notes || null,
+            transportFrom: newReservation.transportFrom,
+            fromTransportRef: newReservation.fromTransportRef || null,
+            transportTo: newReservation.transportTo,
+            toTransportRef: newReservation.toTransportRef || null,
             luggage: newReservation.luggage || false,
             price: newReservation.price,
             tripType: newReservation.tripType || "classic",

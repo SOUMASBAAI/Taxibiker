@@ -50,6 +50,7 @@ export function buildAppleCalendarIcs(reservation) {
     hasValidStop(reservation.stop) ? `Stop : ${reservation.stop}` : null,
     reservation.luggage ? "Bagage supplémentaire : oui" : null,
     `Prix : ${reservation.price}€ TTC`,
+    reservation.notes ? `Notes : ${reservation.notes}` : null,
   ].filter(Boolean);
 
   const summary = `Taxi Biker Paris - ${clientName || "Course"}`;
