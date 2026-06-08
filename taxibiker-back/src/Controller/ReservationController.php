@@ -600,6 +600,7 @@ class ReservationController extends AbstractController
             }
 
             $this->entityManager->flush();
+            $this->sendStatusUpdateNotification($reservation, 'Mise à jour');
 
             $response = [
                 'id' => $reservation->getId(),
@@ -771,6 +772,7 @@ class ReservationController extends AbstractController
             }
             
             $this->entityManager->flush();
+            $this->sendStatusUpdateNotification($reservation, 'cancelled');
 
             return $this->json([
                 'success' => true,
@@ -854,6 +856,7 @@ class ReservationController extends AbstractController
             }
 
             $this->entityManager->flush();
+            $this->sendStatusUpdateNotification($reservation, 'Mise à jour');
 
             // Retourner la réservation mise à jour
             $response = [
