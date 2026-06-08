@@ -31,16 +31,20 @@ export default function EditReservationModal({
     }
   }, [reservation]);
 
-  // Calcul du prix (client uniquement — l'admin saisit le prix manuellement)
+  // Calcul du prix basé sur les options (client + admin)
   useEffect(() => {
-    if (isAdmin) {
-      return;
-    }
     const baggageFee = editLuggage ? 15 : 0;
     const stopFee = editStop && editStop.trim() ? 20 : 0;
-    const basePrice = Math.max(0, (reservation?.price || 0) - (reservation?.luggage ? 15 : 0));
+    const originalStopFee =
+      reservation?.stop && String(reservation.stop).trim() ? 20 : 0;
+    const basePrice = Math.max(
+      0,
+      (reservation?.price || 0) -
+        (reservation?.luggage ? 15 : 0) -
+        originalStopFee
+    );
     setPrice(basePrice + baggageFee + stopFee);
-  }, [editLuggage, editStop, reservation, isAdmin]);
+  }, [editLuggage, editStop, reservation]);
 
   // Fonction pour récupérer les suggestions d'adresse
   const getSuggestions = async (query) => {

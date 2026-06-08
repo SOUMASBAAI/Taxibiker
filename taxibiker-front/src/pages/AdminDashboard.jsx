@@ -321,7 +321,13 @@ const AddReservationModal = ({
   onAddReservation,
   clients = [],
 }) => {
+  const formatDateInputValue = (date) => {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+    return date.toISOString().split("T")[0];
+  };
+
   const [tripType, setTripType] = useState("classic"); // "classic" or "time"
+  const [bookingDate, setBookingDate] = useState(formatDateInputValue(selectedDate));
   const [form, setForm] = useState({
     firstname: "",
     lastname: "",
@@ -539,6 +545,10 @@ const AddReservationModal = ({
 
   const [searchTimeouts, setSearchTimeouts] = useState({});
 
+  useEffect(() => {
+    setBookingDate(formatDateInputValue(selectedDate));
+  }, [selectedDate]);
+
   const handleFromChange = (e) => {
     const value = e.target.value;
     setForm((prev) => ({ ...prev, from: value }));
@@ -637,6 +647,12 @@ const AddReservationModal = ({
 
   // Calculate price using the same backend API as users
   const calculatePrice = async () => {
+    if (!bookingDate) {
+      setForm((prev) => ({ ...prev, price: 0 }));
+      setIsCalculatingPrice(false);
+      return;
+    }
+
     if (tripType === "classic") {
       // Classic trip: need both departure and arrival addresses
       if (!form.from || !form.to || !fromLocation || !toLocation) {
@@ -656,7 +672,7 @@ const AddReservationModal = ({
       setIsCalculatingPrice(true);
       try {
         // Combine date and time
-        const pickupDateTime = new Date(selectedDate);
+        const pickupDateTime = new Date(`${bookingDate}T00:00:00`);
         if (form.time) {
           const [hours, minutes] = form.time.split(":");
           pickupDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
@@ -708,7 +724,7 @@ const AddReservationModal = ({
       setIsCalculatingPrice(true);
       try {
         // Combine date and time
-        const pickupDateTime = new Date(selectedDate);
+        const pickupDateTime = new Date(`${bookingDate}T00:00:00`);
         if (form.time) {
           const [hours, minutes] = form.time.split(":");
           pickupDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
@@ -769,7 +785,7 @@ const AddReservationModal = ({
     form.from,
     form.to,
     form.time,
-    selectedDate,
+    bookingDate,
   ]);
 
   // Click outside to close suggestions
@@ -884,10 +900,15 @@ const AddReservationModal = ({
       return;
     }
 
+    if (!bookingDate) {
+      alert("Veuillez sélectionner une date");
+      return;
+    }
+
     const newReservation = {
       id: Date.now(), // Simple ID generation (sera remplacé par l'ID du backend)
       ...form,
-      date: selectedDate.toISOString().split("T")[0],
+      date: bookingDate,
       price: parseInt(form.price) || 0,
       to: tripType === "classic" ? form.to : form.from, // Pour time-based, to = from
       tripType: tripType,
@@ -957,16 +978,17 @@ const AddReservationModal = ({
           </button>
         </div>
 
-        <div className="mb-4 p-3 bg-gray-700 rounded-lg">
-          <p className="text-sm text-gray-300">
-            Date:{" "}
-            {selectedDate.toLocaleDateString("fr-FR", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </p>
+        <div className="mb-4 p-3 bg-gray-700 rounded-lg space-y-2">
+          <label className="block text-sm font-medium text-gray-300">
+            Date de la réservation
+          </label>
+          <input
+            type="date"
+            value={bookingDate}
+            onChange={(e) => setBookingDate(e.target.value)}
+            className="w-full p-2 rounded-lg bg-gray-800 text-white border border-gray-600 focus:border-orange-500 focus:outline-none"
+            required
+          />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
