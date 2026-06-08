@@ -32,6 +32,9 @@ class ClassicReservation
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $stop = null;
 
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $notes = null;
+
     #[ORM\Column(length: 255)]
     private ?string $statut = null;
 
@@ -115,6 +118,18 @@ class ClassicReservation
     public function setStop(?string $stop): static
     {
         $this->stop = $stop;
+
+        return $this;
+    }
+
+    public function getNotes(): ?string
+    {
+        return $this->notes;
+    }
+
+    public function setNotes(?string $notes): static
+    {
+        $this->notes = $notes;
 
         return $this;
     }

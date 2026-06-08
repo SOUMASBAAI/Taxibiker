@@ -251,6 +251,13 @@ ${invoiceData.email}`;
           <p className="text-gray-300">{reservation.stop || "Aucun"}</p>
         </div>
 
+        {reservation.notes && (
+          <div className="mb-4">
+            <span className="font-semibold">Notes :</span>
+            <p className="text-gray-300 whitespace-pre-wrap">{reservation.notes}</p>
+          </div>
+        )}
+
         <div className="mb-4">
           <span className="font-semibold">Prix :</span>
           <p className="text-gray-300">{reservation.price}€ ttc</p>

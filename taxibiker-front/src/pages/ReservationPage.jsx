@@ -100,6 +100,7 @@ export default function ReservationPage() {
   const [stopChecked, setStopChecked] = useState(false);
   const [stopAddress, setStopAddress] = useState("");
   const [bagage, setBagage] = useState(false);
+  const [notes, setNotes] = useState("");
   const [transportPickup, setTransportPickup] = useState(null);
   const [transportDrop, setTransportDrop] = useState(null);
   const [pickupTransportRef, setPickupTransportRef] = useState("");
@@ -140,6 +141,7 @@ export default function ReservationPage() {
         stopChecked,
         stopAddress,
         bagage,
+        notes,
         transportPickup,
         transportDrop,
         pickupTransportRef,
@@ -182,6 +184,7 @@ export default function ReservationPage() {
         setStopChecked(savedData.stopChecked || false);
         setStopAddress(savedData.stopAddress || "");
         setBagage(savedData.bagage || false);
+        setNotes(savedData.notes || "");
         setTransportPickup(savedData.transportPickup || null);
         setTransportDrop(savedData.transportDrop || null);
         setPickupTransportRef(savedData.pickupTransportRef || "");
@@ -233,6 +236,7 @@ export default function ReservationPage() {
     stopChecked,
     stopAddress,
     bagage,
+    notes,
     transportPickup,
     transportDrop,
     duration,
@@ -1561,6 +1565,18 @@ export default function ReservationPage() {
             </label>
           </div>
 
+          <div>
+            <label className="block text-sm mb-1 text-white">Notes</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Informations complémentaires (optionnel)"
+              rows={3}
+              maxLength={500}
+              className="w-full p-2 rounded bg-gray-900 border border-gray-700 text-sm text-white"
+            />
+          </div>
+
           {/* Mode de paiement */}
           {userCreditInfo?.monthly_credit_enabled && (
             <div className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-sm border border-gray-600/50 rounded-2xl p-6 mt-6 shadow-xl">
@@ -1733,6 +1749,7 @@ export default function ReservationPage() {
                   hours: tripType === "time" ? duration : undefined,
                   stop: stopChecked ? stopAddress : null,
                   excessBaggage: bagage,
+                  notes: notes.trim() || null,
                   paymentMethod: paymentMethod,
                 };
 

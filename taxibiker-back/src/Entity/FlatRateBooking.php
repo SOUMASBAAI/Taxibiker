@@ -32,6 +32,9 @@ class FlatRateBooking
     #[ORM\Column(type: Types::DECIMAL, precision: 5, scale: 2)]
     private ?string $price = null;
 
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $notes = null;
+
     #[ORM\Column(length: 255)]
     private ?string $statut = null;
 
@@ -115,6 +118,18 @@ class FlatRateBooking
     public function setPrice(string $price): static
     {
         $this->price = $price;
+
+        return $this;
+    }
+
+    public function getNotes(): ?string
+    {
+        return $this->notes;
+    }
+
+    public function setNotes(?string $notes): static
+    {
+        $this->notes = $notes;
 
         return $this;
     }

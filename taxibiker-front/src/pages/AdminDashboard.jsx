@@ -10,6 +10,8 @@ import {
   FaClock,
   FaMapMarkerAlt,
   FaMotorcycle,
+  FaPlane,
+  FaTrain,
   FaArrowLeft,
   FaArrowRight,
   FaEye,
@@ -330,6 +332,7 @@ const AddReservationModal = ({
     to: "",
     luggage: false,
     stop: "",
+    notes: "",
     price: 0,
     status: "Acceptée",
     duration: 1, // For time-based trips (in hours)
@@ -354,6 +357,33 @@ const AddReservationModal = ({
   const [selectedClient, setSelectedClient] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState("immediate");
   const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
+  const [transportFrom, setTransportFrom] = useState(null);
+  const [transportTo, setTransportTo] = useState(null);
+  const [fromTransportRef, setFromTransportRef] = useState("");
+  const [toTransportRef, setToTransportRef] = useState("");
+  const [showFromTransportSuggestions, setShowFromTransportSuggestions] =
+    useState(false);
+  const [showToTransportSuggestions, setShowToTransportSuggestions] =
+    useState(false);
+
+  const airports = [
+    "Aéroport Charles de Gaulle (CDG)",
+    "Aéroport Orly (ORY)",
+    "Aéroport du Bourget (LBG)",
+  ];
+
+  const trainStations = [
+    "Gare du Nord",
+    "Gare de Lyon",
+    "Gare de l'Est",
+    "Gare Montparnasse",
+    "Gare Saint-Lazare",
+    "Gare d'Austerlitz",
+    "Gare de Bercy",
+    "Gare de Châtelet-Les Halles",
+    "Gare de La Défense",
+    "Gare de Marne-la-Vallée",
+  ];
 
   const fromRef = useRef(null);
   const toRef = useRef(null);
@@ -763,6 +793,20 @@ const AddReservationModal = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (!transportFrom) {
+      setFromTransportRef("");
+      setShowFromTransportSuggestions(false);
+    }
+  }, [transportFrom]);
+
+  useEffect(() => {
+    if (!transportTo) {
+      setToTransportRef("");
+      setShowToTransportSuggestions(false);
+    }
+  }, [transportTo]);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((prev) => ({
@@ -784,11 +828,45 @@ const AddReservationModal = ({
       stop: "",
       price: 0,
     }));
+    if (type !== "classic") {
+      setTransportFrom(null);
+      setTransportTo(null);
+      setFromTransportRef("");
+      setToTransportRef("");
+      setShowFromTransportSuggestions(false);
+      setShowToTransportSuggestions(false);
+    }
+  };
+
+  const validateTransportRefs = () => {
+    if (transportFrom && !fromTransportRef.trim()) {
+      alert(
+        transportFrom === "plane"
+          ? "Veuillez renseigner le numéro de vol (départ)."
+          : "Veuillez renseigner le numéro de train (départ)."
+      );
+      return false;
+    }
+
+    if (tripType === "classic" && transportTo && !toTransportRef.trim()) {
+      alert(
+        transportTo === "plane"
+          ? "Veuillez renseigner le numéro de vol (arrivée)."
+          : "Veuillez renseigner le numéro de train (arrivée)."
+      );
+      return false;
+    }
+
+    return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    if (!validateTransportRefs()) {
+      return;
+    }
+
     // Vérifier que le prix est calculé
     if (form.price === 0 || form.price === null) {
       alert("Veuillez sélectionner des adresses valides pour calculer le prix");
@@ -814,6 +892,7 @@ const AddReservationModal = ({
       to: tripType === "classic" ? form.to : form.from, // Pour time-based, to = from
       tripType: tripType,
       duration: tripType === "time" ? form.duration : null,
+      notes: form.notes?.trim() || "",
       paymentMethod:
         selectedClient?.monthly_credit_enabled ? paymentMethod : "immediate",
     };
@@ -833,6 +912,7 @@ const AddReservationModal = ({
         to: "",
         luggage: false,
         stop: "",
+        notes: "",
         price: 0,
         status: "Acceptée",
         duration: 1,
@@ -843,6 +923,12 @@ const AddReservationModal = ({
       setSelectedClient(null);
       setClientSearch("");
       setPaymentMethod("immediate");
+      setTransportFrom(null);
+      setTransportTo(null);
+      setFromTransportRef("");
+      setToTransportRef("");
+      setShowFromTransportSuggestions(false);
+      setShowToTransportSuggestions(false);
       onClose();
     } catch (error) {
       // Erreur déjà gérée dans handleAddReservation
@@ -1057,20 +1143,56 @@ const AddReservationModal = ({
             <label className="block text-sm font-medium text-gray-300 mb-1">
               Départ {fromLocation && <span className="text-green-400 text-xs">✓</span>}
             </label>
-            <input
-              type="text"
-              name="from"
-              value={form.from}
-              onChange={handleFromChange}
-              onFocus={() => setShowFromSuggestions(true)}
-              placeholder="Adresse de départ"
-              className={`w-full p-2 rounded-lg text-white border focus:outline-none ${
-                fromLocation
-                  ? "bg-gray-700 border-green-500 focus:border-green-400"
-                  : "bg-gray-700 border-gray-600 focus:border-orange-500"
-              }`}
-              required
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-end">
+              <input
+                type="text"
+                name="from"
+                value={form.from}
+                onChange={handleFromChange}
+                onFocus={() => setShowFromSuggestions(true)}
+                placeholder="Adresse de départ"
+                className={`w-full p-2 rounded-lg text-white border focus:outline-none ${
+                  fromLocation
+                    ? "bg-gray-700 border-green-500 focus:border-green-400"
+                    : "bg-gray-700 border-gray-600 focus:border-orange-500"
+                }`}
+                required
+              />
+              {tripType === "classic" && (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = transportFrom === "plane" ? null : "plane";
+                      setTransportFrom(next);
+                      setShowFromTransportSuggestions(next === "plane");
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-1 p-2 rounded text-sm ${
+                      transportFrom === "plane"
+                        ? "bg-[#DD5212]"
+                        : "bg-gray-700 hover:bg-gray-600"
+                    }`}
+                  >
+                    <FaPlane />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = transportFrom === "train" ? null : "train";
+                      setTransportFrom(next);
+                      setShowFromTransportSuggestions(next === "train");
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-1 p-2 rounded text-sm ${
+                      transportFrom === "train"
+                        ? "bg-[#DD5212]"
+                        : "bg-gray-700 hover:bg-gray-600"
+                    }`}
+                  >
+                    <FaTrain />
+                  </button>
+                </div>
+              )}
+            </div>
             {!fromLocation && form.from && (
               <p className="text-xs text-yellow-400 mt-1">
                 ⚠️ Sélectionnez une adresse depuis les suggestions ci-dessus
@@ -1100,6 +1222,49 @@ const AddReservationModal = ({
                   ))}
                 </div>
               )}
+            {showFromTransportSuggestions && tripType === "classic" && (
+              <div className="mt-2 bg-gray-700 border border-gray-600 rounded-lg p-3">
+                <h4 className="text-sm font-medium text-white mb-2">
+                  {transportFrom === "plane"
+                    ? "Aéroports disponibles"
+                    : "Gares disponibles"}
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {(transportFrom === "plane" ? airports : trainStations).map(
+                    (location, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => {
+                          setForm((prev) => ({ ...prev, from: location }));
+                          setShowFromTransportSuggestions(false);
+                          searchPlace(location, "from");
+                        }}
+                        className="text-left p-2 rounded bg-gray-600 hover:bg-gray-500 text-sm text-white transition"
+                      >
+                        {location}
+                      </button>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
+            {transportFrom && tripType === "classic" && (
+              <div className="mt-2">
+                <label className="block text-sm mb-1 text-white">
+                  {transportFrom === "plane" ? "Numéro de vol" : "Numéro de train"}{" "}
+                  <span className="text-orange-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={fromTransportRef}
+                  onChange={(e) => setFromTransportRef(e.target.value)}
+                  placeholder={transportFrom === "plane" ? "ex: AF1234" : "ex: TGV 8421"}
+                  className="w-full p-2 rounded bg-gray-700 border border-gray-600 text-sm text-white"
+                  required
+                />
+              </div>
+            )}
           </div>
 
           {tripType === "classic" ? (
@@ -1107,20 +1272,54 @@ const AddReservationModal = ({
               <label className="block text-sm font-medium text-gray-300 mb-1">
                 Arrivée {toLocation && <span className="text-green-400 text-xs">✓</span>}
               </label>
-              <input
-                type="text"
-                name="to"
-                value={form.to}
-                onChange={handleToChange}
-                onFocus={() => setShowToSuggestions(true)}
-                placeholder="Adresse d'arrivée"
-                className={`w-full p-2 rounded-lg text-white border focus:outline-none ${
-                  toLocation
-                    ? "bg-gray-700 border-green-500 focus:border-green-400"
-                    : "bg-gray-700 border-gray-600 focus:border-orange-500"
-                }`}
-                required
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-end">
+                <input
+                  type="text"
+                  name="to"
+                  value={form.to}
+                  onChange={handleToChange}
+                  onFocus={() => setShowToSuggestions(true)}
+                  placeholder="Adresse d'arrivée"
+                  className={`w-full p-2 rounded-lg text-white border focus:outline-none ${
+                    toLocation
+                      ? "bg-gray-700 border-green-500 focus:border-green-400"
+                      : "bg-gray-700 border-gray-600 focus:border-orange-500"
+                  }`}
+                  required
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = transportTo === "plane" ? null : "plane";
+                      setTransportTo(next);
+                      setShowToTransportSuggestions(next === "plane");
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-1 p-2 rounded text-sm ${
+                      transportTo === "plane"
+                        ? "bg-[#DD5212]"
+                        : "bg-gray-700 hover:bg-gray-600"
+                    }`}
+                  >
+                    <FaPlane />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = transportTo === "train" ? null : "train";
+                      setTransportTo(next);
+                      setShowToTransportSuggestions(next === "train");
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-1 p-2 rounded text-sm ${
+                      transportTo === "train"
+                        ? "bg-[#DD5212]"
+                        : "bg-gray-700 hover:bg-gray-600"
+                    }`}
+                  >
+                    <FaTrain />
+                  </button>
+                </div>
+              </div>
               {!toLocation && form.to && (
                 <p className="text-xs text-yellow-400 mt-1">
                   ⚠️ Sélectionnez une adresse depuis les suggestions ci-dessus
@@ -1150,6 +1349,49 @@ const AddReservationModal = ({
                     ))}
                   </div>
                 )}
+              {showToTransportSuggestions && (
+                <div className="mt-2 bg-gray-700 border border-gray-600 rounded-lg p-3">
+                  <h4 className="text-sm font-medium text-white mb-2">
+                    {transportTo === "plane"
+                      ? "Aéroports disponibles"
+                      : "Gares disponibles"}
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {(transportTo === "plane" ? airports : trainStations).map(
+                      (location, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => {
+                            setForm((prev) => ({ ...prev, to: location }));
+                            setShowToTransportSuggestions(false);
+                            searchPlace(location, "to");
+                          }}
+                          className="text-left p-2 rounded bg-gray-600 hover:bg-gray-500 text-sm text-white transition"
+                        >
+                          {location}
+                        </button>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+              {transportTo && (
+                <div className="mt-2">
+                  <label className="block text-sm mb-1 text-white">
+                    {transportTo === "plane" ? "Numéro de vol" : "Numéro de train"}{" "}
+                    <span className="text-orange-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={toTransportRef}
+                    onChange={(e) => setToTransportRef(e.target.value)}
+                    placeholder={transportTo === "plane" ? "ex: AF1234" : "ex: TGV 8421"}
+                    className="w-full p-2 rounded bg-gray-700 border border-gray-600 text-sm text-white"
+                    required
+                  />
+                </div>
+              )}
             </div>
           ) : (
             <div>
@@ -1228,6 +1470,21 @@ const AddReservationModal = ({
               )}
             </>
           )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              Notes
+            </label>
+            <textarea
+              name="notes"
+              value={form.notes}
+              onChange={handleChange}
+              rows={3}
+              maxLength={500}
+              placeholder="Informations complémentaires (optionnel)"
+              className="w-full p-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:border-orange-500 focus:outline-none"
+            />
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -1413,6 +1670,7 @@ export default function AdminDashboard() {
           status: mapApiStatusToUi(res.status),
           luggage: res.excessBaggage,
           stop: res.stop || "",
+          notes: res.notes || "",
           price: parseFloat(res.price),
           type: res.type,
           hours: res.hours || null,
@@ -1506,6 +1764,7 @@ export default function AdminDashboard() {
         time: timePart?.substring(0, 5) || updated.time,
         luggage: apiRes.excessBaggage,
         stop: apiRes.stop || "",
+        notes: apiRes.notes || "",
         price: parseFloat(apiRes.price),
         hours: apiRes.hours ?? updated.hours,
         status: mapApiStatusToUi(apiRes.status),
@@ -1632,6 +1891,7 @@ export default function AdminDashboard() {
             from: newReservation.from,
             to: newReservation.tripType === "classic" ? newReservation.to : newReservation.from,
             stop: newReservation.stop || null,
+            notes: newReservation.notes || null,
             luggage: newReservation.luggage || false,
             price: newReservation.price,
             tripType: newReservation.tripType || "classic",

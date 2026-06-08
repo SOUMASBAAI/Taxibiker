@@ -68,6 +68,7 @@ export default function UserDashboard() {
               },
               luggage: res.excessBaggage,
               stop: res.stop || "",
+              notes: res.notes || "",
               status:
                 res.status === "pending"
                   ? "En attente"
@@ -155,6 +156,7 @@ export default function UserDashboard() {
                   time: dateTime[1]?.substring(0, 5) || "00:00",
                   luggage: updatedReservation.excessBaggage,
                   stop: updatedReservation.stop || "",
+                  notes: updatedReservation.notes || "",
                 }
               : r
           )

@@ -73,6 +73,13 @@ export default function ViewReservationModal({ reservation, onClose }) {
             </div>
           )}
 
+          {reservation.notes && (
+            <div className="bg-white/5 rounded-xl p-4">
+              <h3 className="font-semibold mb-2 text-orange-400">📝 Notes</h3>
+              <p className="text-gray-200 whitespace-pre-wrap">{reservation.notes}</p>
+            </div>
+          )}
+
           {/* Prix */}
           <div className="bg-gradient-to-r from-orange-600/20 to-orange-800/20 rounded-xl p-4 border border-orange-500/30">
             <div className="flex items-center justify-between">

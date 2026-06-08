@@ -57,6 +57,8 @@ class ReservationController extends AbstractController
         try {
             $date = new \DateTime($data['date']);
             $mode = $data['mode']; // 'classic' ou 'hourly'
+            $notes = isset($data['notes']) ? trim((string) $data['notes']) : null;
+            $notes = $notes !== '' ? $notes : null;
             
             if ($mode === 'hourly') {
                 // Course à la durée (FlatRateBooking)
@@ -68,6 +70,7 @@ class ReservationController extends AbstractController
                 $reservation->setNumberOfHours($data['hours'] ?? 2);
                 $reservation->setExcessBaggage($data['excessBaggage'] ?? false);
                 $reservation->setPrice((string) $data['totalPrice']);
+                $reservation->setNotes($notes);
                 $reservation->setStatut('pending'); // En attente de validation
                 
             } else {
@@ -86,6 +89,7 @@ class ReservationController extends AbstractController
                 $reservation->setExcessBaggage($data['excessBaggage'] ?? false);
                 $reservation->setPrice((string) $data['totalPrice']);
                 $reservation->setStop($data['stop'] ?? null); // Adresse du stop éventuel
+                $reservation->setNotes($notes);
                 $reservation->setStatut('pending');
             }
 
@@ -127,6 +131,7 @@ class ReservationController extends AbstractController
                     'arrival' => $reservation->getArrival(),
                     'date' => $date->format('Y-m-d H:i:s'),
                     'price' => $reservation->getPrice(),
+                    'notes' => method_exists($reservation, 'getNotes') ? $reservation->getNotes() : null,
                     'status' => $reservation->getStatut(),
                     'type' => $mode,
                     'payment_method' => $paymentMethod
@@ -200,6 +205,8 @@ class ReservationController extends AbstractController
             // Déterminer le type de réservation
             $tripType = $data['tripType'] ?? 'classic';
             $mode = ($tripType === 'time' || $tripType === 'hourly') ? 'hourly' : 'classic';
+            $notes = isset($data['notes']) ? trim((string) $data['notes']) : null;
+            $notes = $notes !== '' ? $notes : null;
 
             $paymentMethod = $data['paymentMethod'] ?? 'immediate';
             if (!in_array($paymentMethod, ['immediate', 'credit'], true)) {
@@ -221,6 +228,7 @@ class ReservationController extends AbstractController
                 $reservation->setNumberOfHours($data['duration'] ?? 2);
                 $reservation->setExcessBaggage($data['luggage'] ?? false);
                 $reservation->setPrice((string) $data['price']);
+                $reservation->setNotes($notes);
                 $reservation->setStatut('confirmed'); // Admin crée directement en "Acceptée"
             } else {
                 // Course classique
@@ -238,6 +246,7 @@ class ReservationController extends AbstractController
                 $reservation->setExcessBaggage($data['luggage'] ?? false);
                 $reservation->setPrice((string) $data['price']);
                 $reservation->setStop($data['stop'] ?? null);
+                $reservation->setNotes($notes);
                 $reservation->setStatut('confirmed'); // Admin crée directement en "Acceptée"
             }
 
@@ -274,6 +283,7 @@ class ReservationController extends AbstractController
                     'arrival' => $reservation->getArrival(),
                     'date' => $date->format('Y-m-d H:i:s'),
                     'price' => $reservation->getPrice(),
+                    'notes' => method_exists($reservation, 'getNotes') ? $reservation->getNotes() : null,
                     'status' => $reservation->getStatut(),
                     'paymentMethod' => $paymentMethod,
                 ]
@@ -334,6 +344,7 @@ class ReservationController extends AbstractController
                 'departure' => $res->getDeparture(),
                 'arrival' => $res->getArrival(),
                 'stop' => $res->getStop(),
+                'notes' => $res->getNotes(),
                 'date' => $res->getDate()->format('Y-m-d H:i:s'),
                 'price' => $res->getPrice(),
                 'status' => $res->getStatut(),
@@ -355,6 +366,7 @@ class ReservationController extends AbstractController
                 ],
                 'departure' => $res->getDeparture(),
                 'arrival' => $res->getArrival(),
+                'notes' => $res->getNotes(),
                 'hours' => $res->getNumberOfHours(),
                 'date' => $res->getDate()->format('Y-m-d H:i:s'),
                 'price' => $res->getPrice(),
@@ -407,6 +419,7 @@ class ReservationController extends AbstractController
                 'departure' => $res->getDeparture(),
                 'arrival' => $res->getArrival(),
                 'stop' => $res->getStop(),
+                'notes' => $res->getNotes(),
                 'date' => $res->getDate()->format('Y-m-d H:i:s'),
                 'price' => $res->getPrice(),
                 'status' => $res->getStatut(),
@@ -421,6 +434,8 @@ class ReservationController extends AbstractController
                 'id' => $res->getId(),
                 'type' => 'hourly',
                 'departure' => $res->getDeparture(),
+                'arrival' => $res->getArrival(),
+                'notes' => $res->getNotes(),
                 'hours' => $res->getNumberOfHours(),
                 'date' => $res->getDate()->format('Y-m-d H:i:s'),
                 'price' => $res->getPrice(),
@@ -573,6 +588,11 @@ class ReservationController extends AbstractController
                 $reservation->setStop($data['stop'] ?: null);
             }
 
+            if (array_key_exists('notes', $data) && method_exists($reservation, 'setNotes')) {
+                $notes = trim((string) $data['notes']);
+                $reservation->setNotes($notes !== '' ? $notes : null);
+            }
+
             if (!$isClassic && isset($data['hours'])) {
                 $reservation->setNumberOfHours((int) $data['hours']);
             }
@@ -586,6 +606,7 @@ class ReservationController extends AbstractController
                 'arrival' => $reservation->getArrival(),
                 'date' => $reservation->getDate()->format('Y-m-d H:i:s'),
                 'price' => $reservation->getPrice(),
+                'notes' => method_exists($reservation, 'getNotes') ? $reservation->getNotes() : null,
                 'status' => $reservation->getStatut(),
                 'excessBaggage' => $reservation->isExcessBaggage(),
             ];
@@ -825,6 +846,11 @@ class ReservationController extends AbstractController
                 $reservation->setStop($data['stop']);
             }
 
+            if (array_key_exists('notes', $data) && method_exists($reservation, 'setNotes')) {
+                $notes = trim((string) $data['notes']);
+                $reservation->setNotes($notes !== '' ? $notes : null);
+            }
+
             $this->entityManager->flush();
 
             // Retourner la réservation mise à jour
@@ -835,6 +861,7 @@ class ReservationController extends AbstractController
                 'arrival' => $reservation->getArrival(),
                 'date' => $reservation->getDate()->format('Y-m-d H:i:s'),
                 'price' => $reservation->getPrice(),
+                'notes' => method_exists($reservation, 'getNotes') ? $reservation->getNotes() : null,
                 'status' => $reservation->getStatut(),
                 'excessBaggage' => $reservation->isExcessBaggage()
             ];
