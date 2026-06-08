@@ -258,8 +258,10 @@ class ReservationController extends AbstractController
 
             $this->entityManager->flush();
 
-            // Envoyer les notifications WhatsApp
-            $this->sendEmailNotifications($reservation, $client, $data);
+            // Pour une création admin, envoyer au client la même confirmation
+            // que lorsqu'une réservation est confirmée ("Acceptée")
+            $this->sendStatusUpdateNotification($reservation, 'confirmed');
+            $this->sendAdminNotificationOnly($reservation, $client);
 
             $message = $paymentMethod === 'credit'
                 ? 'Réservation créée. Montant ajouté au crédit mensuel du client.'
@@ -1009,6 +1011,43 @@ class ReservationController extends AbstractController
         }
     }
 
+    private function sendAdminNotificationOnly($reservation, User $user): void
+    {
+        try {
+            $reservationData = [
+                'firstname' => $user->getFirstName(),
+                'lastname' => $user->getLastName(),
+                'email' => $user->getEmail(),
+                'phone' => $user->getPhoneNumber(),
+                'date' => $reservation->getDate()->format('d/m/Y'),
+                'time' => $reservation->getDate()->format('H:i'),
+                'price' => $reservation->getPrice(),
+                'paymentMethod' => method_exists($reservation, 'getPaymentMethod') ? $reservation->getPaymentMethod() : 'immediate',
+            ];
+
+            if ($reservation instanceof ClassicReservation) {
+                $reservationData['type'] = 'classic';
+                $reservationData['from'] = $reservation->getDeparture();
+                $reservationData['to'] = $reservation->getArrival();
+                $reservationData['stop'] = $reservation->getStop();
+                $reservationData['luggage'] = $reservation->isExcessBaggage();
+            } elseif ($reservation instanceof FlatRateBooking) {
+                $reservationData['type'] = 'time';
+                $reservationData['from'] = $reservation->getDeparture();
+                $reservationData['to'] = $reservation->getArrival();
+                $reservationData['duration'] = $reservation->getNumberOfHours();
+                $reservationData['luggage'] = $reservation->isExcessBaggage();
+            }
+
+            $adminEmail = $this->parameterBag->get('admin.notification_email');
+            if ($adminEmail) {
+                $this->emailService->sendAdminNotification($adminEmail, $reservationData);
+            }
+        } catch (\Exception $e) {
+            error_log('Erreur envoi email admin (création admin): ' . $e->getMessage());
+        }
+    }
+
     /**
      * Envoie une notification email pour un changement de statut
      */
@@ -1045,6 +1084,7 @@ class ReservationController extends AbstractController
                 'date' => $reservationDate->format('d/m/y'),
                 'time' => $this->formatEmailTime($reservationDate),
                 'price' => $reservation->getPrice(),
+                'notes' => method_exists($reservation, 'getNotes') ? $reservation->getNotes() : null,
                 'from' => $departure,
                 'to' => $arrival,
                 'infos' => $this->buildTransportInfos($departure, $arrival),

@@ -190,6 +190,44 @@
 
             {% else %}
             <p>Le statut de votre réservation du <strong>{{ date }}</strong> à <strong>{{ time }}</strong> a été mis à jour : <strong>{{ status }}</strong>.</p>
+            <div class="info-card">
+                <div class="info-row">
+                    <span class="info-label">📅 Date :</span>
+                    <span class="info-value">{{ date }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">🕒 Heure :</span>
+                    <span class="info-value">{{ time }}</span>
+                </div>
+                {% if from is defined %}
+                <div class="info-row">
+                    <span class="info-label">📍 Départ :</span>
+                    <span class="info-value">{{ from }}</span>
+                </div>
+                {% endif %}
+                {% if to is defined %}
+                <div class="info-row">
+                    <span class="info-label">🏁 Arrivée :</span>
+                    <span class="info-value">{{ to }}</span>
+                </div>
+                {% endif %}
+                {% if stop is defined and stop %}
+                <div class="info-row">
+                    <span class="info-label">🛑 Stop :</span>
+                    <span class="info-value">{{ stop }}</span>
+                </div>
+                {% endif %}
+                {% if notes is defined and notes %}
+                <div class="info-row">
+                    <span class="info-label">📝 Notes :</span>
+                    <span class="info-value">{{ notes }}</span>
+                </div>
+                {% endif %}
+                <div class="info-row">
+                    <span class="info-label">💰 Prix :</span>
+                    <span class="info-value" style="font-weight: bold; color: #DD5212;">{{ price }}€</span>
+                </div>
+            </div>
             {% endif %}
         </div>
 
