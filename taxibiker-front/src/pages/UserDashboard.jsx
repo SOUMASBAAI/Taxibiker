@@ -124,16 +124,14 @@ export default function UserDashboard() {
 
   const handleUpdateReservation = async (updated) => {
     try {
-      // Convertir la date et l'heure en format ISO
-      const dateTimeStr = `${updated.date} ${updated.time}`;
-      const dateTime = new Date(dateTimeStr);
+      const dateTimeStr = `${updated.date} ${updated.time}:00`;
 
       const response = await authService.authenticatedRequest(
         buildApiUrl(`reservations/${updated.id}/update`),
         {
           method: "PATCH",
           body: JSON.stringify({
-            date: dateTime.toISOString(),
+            date: dateTimeStr,
             excessBaggage: updated.luggage,
             stop: updated.stop || null,
             price: updated.price,

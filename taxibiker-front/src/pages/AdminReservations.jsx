@@ -97,10 +97,9 @@ export default function AdminReservations() {
   // Réservations
   const handleUpdateReservation = async (updated) => {
     try {
-      const dateTimeStr = `${updated.date}T${updated.time}:00`;
       const body = {
         type: updated.type,
-        date: new Date(dateTimeStr).toISOString(),
+        date: `${updated.date} ${updated.time}:00`,
         excessBaggage: updated.luggage,
         price: updated.price,
       };
