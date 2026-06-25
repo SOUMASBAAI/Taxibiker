@@ -40,9 +40,8 @@ class PricingController extends AbstractController
         $dateTime = null;
         if (isset($data['datetime'])) {
             try {
-                // Parse datetime and convert to Europe/Paris timezone
-                $dateTime = new \DateTime($data['datetime']);
-                $dateTime->setTimezone(new \DateTimeZone('Europe/Paris'));
+                // Parse datetime as Europe/Paris local time
+                $dateTime = new \DateTime($data['datetime'], new \DateTimeZone('Europe/Paris'));
             } catch (\Exception $e) {
                 return $this->json([
                     'error' => 'Invalid datetime format. Use ISO 8601 format (e.g., 2024-01-15T20:30:00)'

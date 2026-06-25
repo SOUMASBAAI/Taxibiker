@@ -55,7 +55,7 @@ class ReservationController extends AbstractController
         }
 
         try {
-            $date = new \DateTime($data['date']);
+            $date = new \DateTime($data['date'], new \DateTimeZone('Europe/Paris'));
             $mode = $data['mode']; // 'classic' ou 'hourly'
             $notes = $this->buildReservationNotes($data);
             
@@ -199,7 +199,7 @@ class ReservationController extends AbstractController
 
             // Créer la date complète avec l'heure
             $dateTimeString = $data['date'] . ' ' . $data['time'] . ':00';
-            $date = new \DateTime($dateTimeString);
+            $date = new \DateTime($dateTimeString, new \DateTimeZone('Europe/Paris'));
 
             // Déterminer le type de réservation
             $tripType = $data['tripType'] ?? 'classic';
@@ -573,7 +573,7 @@ class ReservationController extends AbstractController
 
         try {
             if (isset($data['date'])) {
-                $reservation->setDate(new \DateTime($data['date']));
+                $reservation->setDate(new \DateTime($data['date'], new \DateTimeZone('Europe/Paris')));
             }
 
             if (isset($data['excessBaggage'])) {
@@ -839,7 +839,7 @@ class ReservationController extends AbstractController
         try {
             // Mettre à jour uniquement les champs autorisés
             if (isset($data['date'])) {
-                $date = new \DateTime($data['date']);
+                $date = new \DateTime($data['date'], new \DateTimeZone('Europe/Paris'));
                 $reservation->setDate($date);
             }
 

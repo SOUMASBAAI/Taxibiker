@@ -292,11 +292,14 @@ export default function ReservationPage() {
         pickupDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
       }
 
+      const pad = (n) => String(n).padStart(2, "0");
+      const localDatetime = `${pickupDateTime.getFullYear()}-${pad(pickupDateTime.getMonth() + 1)}-${pad(pickupDateTime.getDate())} ${pad(pickupDateTime.getHours())}:${pad(pickupDateTime.getMinutes())}:00`;
+
       const requestData = {
         departure: pickupAddress,
         arrival: dropAddress || pickupAddress, // Use pickup as default for hourly mode
         mode: tripType === "time" ? "hourly" : "classic",
-        datetime: pickupDateTime.toISOString(),
+        datetime: localDatetime,
       };
 
       // Add mode-specific parameters
@@ -1740,10 +1743,13 @@ export default function ReservationPage() {
                   );
                 }
 
+                const pad2 = (n) => String(n).padStart(2, "0");
+                const localReservationDatetime = `${reservationDateTime.getFullYear()}-${pad2(reservationDateTime.getMonth() + 1)}-${pad2(reservationDateTime.getDate())} ${pad2(reservationDateTime.getHours())}:${pad2(reservationDateTime.getMinutes())}:00`;
+
                 const reservationData = {
                   departure: pickupAddress,
                   arrival: dropAddress || pickupAddress,
-                  date: reservationDateTime.toISOString(),
+                  date: localReservationDatetime,
                   mode: tripType === "time" ? "hourly" : "classic",
                   totalPrice: totalPrice,
                   hours: tripType === "time" ? duration : undefined,
